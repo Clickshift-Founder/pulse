@@ -1,0 +1,116 @@
+# ════════════════════════════════════════════════════════════════
+#  PULSE — Complete Environment Variable Reference
+#  Every variable mapped to exact file + what to upgrade for mainnet
+# ════════════════════════════════════════════════════════════════
+
+# ─── SOLANA RPC ───────────────────────────────────────────────────────────────
+# Used in: src/api/server.ts (line: new Connection(...))
+# Used in: src/demo/runDemo.ts
+# Devnet (free, no key):
+SOLANA_RPC_URL=https://api.devnet.solana.com
+# Mainnet upgrade → get a key at helius.dev (free tier: 100k requests/day)
+# SOLANA_RPC_URL=https://mainnet.helius-rpc.com/?api-key=YOUR_HELIUS_KEY
+
+# Used in: src/dashboard/public/index.html (badge display)
+# Used in: src/api/server.ts (health endpoint)
+SOLANA_NETWORK=devnet
+# Mainnet: SOLANA_NETWORK=mainnet-beta
+
+# ─── OPENAI ───────────────────────────────────────────────────────────────────
+# Used in: src/agent/Orchestrator.ts (new OpenAI({ apiKey: ... }))
+# Used in: src/heartbeat/HeartbeatEngine.ts (reasoning per cycle)
+# You already have this — paste your existing key
+OPENAI_API_KEY=sk-proj-your-key-here
+
+# Used in: Orchestrator.ts and HeartbeatEngine.ts (model selection)
+# gpt-4o-mini is cheapest and fast enough for trading decisions
+# Mainnet upgrade → gpt-4o for higher-stakes reasoning
+OPENAI_MODEL=gpt-4o-mini
+
+# ─── ENCRYPTION (CRITICAL — NEVER SHARE OR LOSE THIS) ────────────────────────
+# Used in: src/wallet/AgentWallet.ts (AES-256-GCM key derivation via scrypt)
+# This encrypts every agent's private key on disk.
+# Generate: run this in terminal → node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+# If you lose this, you lose access to all agent wallets. Back it up offline.
+ENCRYPTION_SECRET=generate-a-64-char-hex-string-using-command-above
+
+# ─── GOVERNOR (NEW — Permissioned Brain) ─────────────────────────────────────
+# Used in: src/agent/Governor.ts (vault/agent spending limits)
+# Max SOL the agent wallet can spend in a single transaction
+GOVERNOR_MAX_SINGLE_TX_SOL=0.5
+# Max SOL agent can spend per 24-hour window
+GOVERNOR_DAILY_LIMIT_SOL=2.0
+# Min USD liquidity a token must have for agent to buy it
+GOVERNOR_MIN_LIQUIDITY_USD=50000
+# Max price impact % before Governor blocks the swap
+GOVERNOR_MAX_PRICE_IMPACT_PCT=3
+
+# ─── SERVER ───────────────────────────────────────────────────────────────────
+# Used in: src/api/server.ts (server.listen(PORT))
+# Railway sets this automatically — keep at 3000 for local dev
+PORT=3000
+
+# ─── HEARTBEAT ────────────────────────────────────────────────────────────────
+# Used in: src/heartbeat/HeartbeatEngine.ts (setInterval)
+# 60000 = 60 seconds. Good for demo (judges see action fast)
+# Mainnet: 300000 (5 minutes) to reduce RPC calls and OpenAI costs
+HEARTBEAT_INTERVAL_MS=60000
+
+# ─── JUPITER ─────────────────────────────────────────────────────────────────
+# Used in: src/integrations/JupiterSwap.ts (axios.get base URL)
+# No API key needed — Jupiter V6 is public
+JUPITER_API_BASE=https://quote-api.jup.ag/v6
+
+# Mainnet upgrade → add your referral account to earn fees on every swap
+# Create at: https://referral.jup.ag/
+# JUPITER_REFERRAL_ACCOUNT=your-jupiter-referral-pubkey
+# JUPITER_REFERRAL_FEE_BPS=10  (= 0.1% fee you earn per swap)
+
+# ─── INTEGRATION AUTH ─────────────────────────────────────────────────────────
+# Used in: src/api/server.ts (header check: x-sentinel-secret)
+# Your Telegram bot sends this in headers when calling /api/execute
+# Invent any strong random string — must match what your bot sends
+TELEGRAM_BOT_INTEGRATION_SECRET=make-up-any-long-random-string-here
+
+# ─── OFF-RAMP ─────────────────────────────────────────────────────────────────
+# Used in: src/agent/OffRamperAgent.ts (destination wallet for profit sweeps)
+# Leave empty for dry-run mode (plans but doesn't execute sweeps)
+# Fill with a Solana address to enable real profit sweeping
+OFFRAMP_DESTINATION=
+
+# ─── DATABASE (ADD FOR MAINNET) ───────────────────────────────────────────────
+# Not in demo code — add when going multi-user
+# Railway → Add Plugin → PostgreSQL → copy the DATABASE_URL it gives you
+# DATABASE_URL=postgresql://user:pass@host:5432/pulse_db
+
+# ─── REDIS (ADD FOR MAINNET) ─────────────────────────────────────────────────
+# For session management, rate limiting, job queues
+# Railway → Add Plugin → Redis → copy URL
+# REDIS_URL=redis://default:password@host:6379
+
+# ─── USER AUTH (ADD FOR MULTI-USER) ──────────────────────────────────────────
+# JWT secret for signing user session tokens (wallet-auth, not password)
+# JWT_SECRET=generate-another-64-char-random-hex-string
+
+# ════════════════════════════════════════════════════════════════
+#  RAILWAY SETUP INSTRUCTIONS
+# ════════════════════════════════════════════════════════════════
+# 1. railway.app → New Project → Deploy from GitHub
+# 2. Select your repo
+# 3. Railway auto-detects Node.js and uses railway.json for build
+# 4. Go to project → Variables tab → Add ALL variables above
+#    (except the commented-out ones with #)
+# 5. Railway auto-assigns PORT — you don't need to set it there
+# 6. After deploy: Settings → Domains → Generate Domain
+#    You get: pulse-production-RANDOM.up.railway.app
+#    THIS is what you CNAME to in Cloudflare (see below)
+#
+#  CLOUDFLARE DNS (for pulse.clickshift.io):
+#  Type: CNAME
+#  Name: pulse
+#  Target: pulse-production-RANDOM.up.railway.app
+#  Proxy: OFF (grey cloud — NOT orange, WebSockets need direct)
+#
+#  Back in Railway: Settings → Domains → Add Custom Domain
+#  Type: pulse.clickshift.io → Railway provisions SSL automatically
+# ════════════════════════════════════════════════════════════════

@@ -130,8 +130,8 @@ app.post("/api/execute", async (req, res) => {
     const { command } = req.body;
     if (!command) return res.status(400).json({ error: "command required" });
 
-    // Auth check
-    const secret = req.headers["x-sentinel-secret"];
+    // Auth check — header is x-pulse-secret (update your Telegram bot to match)
+    const secret = req.headers["x-pulse-secret"];
     if (process.env.TELEGRAM_BOT_INTEGRATION_SECRET && secret !== process.env.TELEGRAM_BOT_INTEGRATION_SECRET) {
       return res.status(401).json({ error: "Unauthorized" });
     }
@@ -211,6 +211,34 @@ app.get("/api/price/:mint", async (req, res) => {
   }
 });
 
+// ─── Metrics — investor + user dashboard data ─────────────────────────────────
+app.get("/api/metrics", async (_req, res) => {
+  try {
+    const { metricsEngine } = await import("../agent/MetricsEngine");
+    const metrics = metricsEngine.getProtocolMetrics();
+    const agentPerfs = metricsEngine.getAgentPerformances();
+    res.json({ metrics, agentPerformances: agentPerfs });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Governor status for an agent ────────────────────────────────────────────
+app.get("/api/agents/:agentId/governor", async (req, res) => {
+  // Returns spending window status for UI display
+  // In full implementation, Governor instance is stored per-agent
+  res.json({
+    agentId: req.params.agentId,
+    note: "Governor rules apply to all swaps. Check /api/portfolio for balances.",
+    rules: {
+      maxSingleTxSOL: parseFloat(process.env.GOVERNOR_MAX_SINGLE_TX_SOL || "0.5"),
+      dailyLimitSOL: parseFloat(process.env.GOVERNOR_DAILY_LIMIT_SOL || "2.0"),
+      maxPriceImpactPct: parseFloat(process.env.GOVERNOR_MAX_PRICE_IMPACT_PCT || "3"),
+      requireRugCheck: true,
+    }
+  });
+});
+
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", initialized, network: process.env.SOLANA_NETWORK || "devnet" });
 });
@@ -225,6 +253,7 @@ const PORT = parseInt(process.env.PORT || "3000");
 server.listen(PORT, async () => {
   console.log(`\n  Dashboard: http://localhost:${PORT}`);
   console.log(`  API:       http://localhost:${PORT}/api`);
+  console.log(`  Metrics:   http://localhost:${PORT}/api/metrics`);
   console.log(`  Network:   ${process.env.SOLANA_NETWORK || "devnet"}\n`);
   await initializeSwarm();
 });
