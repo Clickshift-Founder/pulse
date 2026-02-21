@@ -211,6 +211,52 @@ app.get("/api/price/:mint", async (req, res) => {
   }
 });
 
+// ─── Agent Factory Routes ─────────────────────────────────────────────────────
+
+// Get all available roles (with lock status for a tier)
+app.get("/api/factory/roles", (req, res) => {
+  try {
+    const { AgentFactory, ROLE_REGISTRY } = require("../agent/AgentFactory");
+    const tier = (req.query.tier as string) || "free";
+    // Return all roles with locked flag — UI shows locked ones greyed out
+    const tierOrder = ["free", "pro", "team"];
+    const userIdx = tierOrder.indexOf(tier);
+    const roles = ROLE_REGISTRY.map((r: any) => ({
+      ...r,
+      locked: tierOrder.indexOf(r.requiredTier) > userIdx,
+    }));
+    res.json({ roles });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Spawn a custom agent
+app.post("/api/factory/spawn", async (req, res) => {
+  try {
+    const { AgentFactory } = await import("../agent/AgentFactory");
+    const factory = new AgentFactory(connection);
+    const { userId = "demo_user", tier = "free", roleKey, customName, description } = req.body;
+
+    let agent;
+    if (description && !roleKey) {
+      agent = await factory.spawnFromDescription(userId, tier, description);
+    } else {
+      agent = await factory.spawn({ userId, tier, roleKey: roleKey || "dca_agent", customName });
+    }
+
+    if (orchestrator) orchestrator.registerAgent(
+      await AgentWallet.load(agent.agentId, connection),
+      { trackedMints: [] }
+    );
+
+    broadcast("agent_spawned", agent);
+    res.json({ success: true, agent });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // ─── Metrics — investor + user dashboard data ─────────────────────────────────
 app.get("/api/metrics", async (_req, res) => {
   try {

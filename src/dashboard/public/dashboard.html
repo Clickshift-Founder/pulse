@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pulse — Agentic Wallet OS</title>
+  <style>
+    :root {
+      --bg: #060b14;
+      --surface: #0d1624;
+      --surface2: #111e30;
+      --border: #1a2d46;
+      --accent: #6366f1;
+      --accent2: #22d3ee;
+      --green: #10b981;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --purple: #a78bfa;
+      --text: #e2e8f0;
+      --muted: #4a6080;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── HEADER ─────────────────────────────────────────── */
+    header {
+      background: linear-gradient(90deg, #060b14 0%, #0d1a30 50%, #060b14 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 0.8rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .logo-pulse {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 20px var(--accent);
+      animation: pulse-glow 2s ease-in-out infinite;
+    }
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 10px var(--accent), 0 0 20px var(--accent); }
+      50% { box-shadow: 0 0 20px var(--accent), 0 0 40px var(--accent), 0 0 60px var(--accent); }
+    }
+    .logo-text { font-size: 1.4rem; font-weight: bold; letter-spacing: 4px; color: var(--text); }
+    .logo-sub { font-size: 0.65rem; color: var(--muted); letter-spacing: 2px; }
+    .header-right { display: flex; align-items: center; gap: 1.2rem; }
+    .badge {
+      padding: 0.2rem 0.7rem;
+      border-radius: 20px;
+      font-size: 0.68rem;
+      letter-spacing: 1px;
+      font-weight: bold;
+    }
+    .badge-devnet { background: #052e16; color: var(--green); border: 1px solid #166534; }
+    .badge-live { background: #1e1040; color: var(--accent); border: 1px solid var(--accent); animation: blink-border 1.5s infinite; }
+    @keyframes blink-border { 0%, 100% { border-color: var(--accent); } 50% { border-color: transparent; } }
+
+    /* ── LAYOUT ─────────────────────────────────────────── */
+    main { display: grid; grid-template-columns: 340px 1fr 340px; grid-template-rows: auto 1fr; gap: 0; height: calc(100vh - 60px); }
+
+    /* ── PANELS ─────────────────────────────────────────── */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .panel-header {
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .panel-header .title { color: var(--accent2); }
+    .panel-body { flex: 1; overflow-y: auto; padding: 0.8rem; }
+    .panel-body::-webkit-scrollbar { width: 3px; }
+    .panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* ── LEFT: AGENTS ───────────────────────────────────── */
+    #leftPanel { grid-column: 1; grid-row: 1 / 3; }
+    .agent-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.9rem;
+      margin-bottom: 0.6rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      cursor: default;
+    }
+    .agent-card.active { border-color: var(--green); box-shadow: 0 0 12px rgba(16,185,129,0.15); }
+    .agent-card.heartbeat-active { border-color: var(--accent); }
+    .agent-card .agent-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; }
+    .agent-name { font-size: 0.82rem; font-weight: bold; color: var(--text); }
+    .agent-role { font-size: 0.65rem; color: var(--muted); margin-top: 0.1rem; }
+    .agent-balance { font-size: 1.1rem; color: var(--accent2); font-weight: bold; }
+    .agent-status-row { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.4rem; }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      font-size: 0.6rem;
+      letter-spacing: 0.5px;
+    }
+    .tag-active { background: #052e16; color: var(--green); }
+    .tag-idle { background: #1a2030; color: var(--muted); }
+    .tag-heartbeat { background: #1e1040; color: var(--purple); animation: blink-tag 2s infinite; }
+    @keyframes blink-tag { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .pubkey { font-size: 0.6rem; color: var(--muted); cursor: pointer; margin-top: 0.3rem; }
+    .pubkey:hover { color: var(--accent2); }
+    .heartbeat-bar {
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      margin-top: 0.5rem;
+      overflow: hidden;
+    }
+    .heartbeat-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 2px;
+      transition: width 1s linear;
+    }
+
+    /* ── CENTER TOP: STATS ──────────────────────────────── */
+    #centerTop { grid-column: 2; grid-row: 1; border-bottom: 1px solid var(--border); }
+    .stats-row { display: flex; padding: 0.8rem; gap: 0.8rem; }
+    .stat-box {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.8rem;
+      text-align: center;
+    }
+    .stat-box .s-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+    .stat-box .s-value { font-size: 1.4rem; font-weight: bold; color: var(--accent2); margin-top: 0.2rem; }
+
+    /* ── CENTER MAIN: THOUGHT STREAM ────────────────────── */
+    #thoughtPanel { grid-column: 2; grid-row: 2; }
+    .thought-entry {
+      display: flex;
+      gap: 0.6rem;
+      padding: 0.45rem 0.5rem;
+      border-left: 3px solid transparent;
+      border-radius: 0 4px 4px 0;
+      margin-bottom: 2px;
+      animation: thought-in 0.3s ease;
+      font-size: 0.77rem;
+      line-height: 1.4;
+    }
+    @keyframes thought-in {
+      from { opacity: 0; transform: translateX(-8px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .thought-entry .t-icon { flex-shrink: 0; font-size: 0.9rem; }
+    .thought-entry .t-body { flex: 1; min-width: 0; }
+    .thought-entry .t-agent { font-size: 0.6rem; color: var(--muted); margin-bottom: 0.1rem; }
+    .thought-entry .t-msg { color: var(--text); word-break: break-word; }
+    .thought-entry .t-time { font-size: 0.6rem; color: var(--muted); flex-shrink: 0; margin-top: 0.15rem; }
+
+    /* thought colors */
+    .t-WAKE    { border-color: #6366f1; background: rgba(99,102,241,0.05); }
+    .t-READ    { border-color: #a78bfa; background: rgba(167,139,250,0.04); }
+    .t-THINK   { border-color: #f59e0b; background: rgba(245,158,11,0.05); }
+    .t-PLAN    { border-color: #22d3ee; background: rgba(34,211,238,0.05); }
+    .t-EXECUTE { border-color: #10b981; background: rgba(16,185,129,0.07); }
+    .t-OBSERVE { border-color: #4a6080; background: transparent; }
+    .t-ALERT   { border-color: #ef4444; background: rgba(239,68,68,0.08); }
+    .t-SLEEP   { border-color: #1e2d40; background: transparent; opacity: 0.5; }
+    .t-ERROR   { border-color: #ef4444; background: rgba(239,68,68,0.1); }
+    .t-SUCCESS { border-color: #10b981; background: rgba(16,185,129,0.08); }
+
+    /* ── RIGHT: COMMAND CENTER ──────────────────────────── */
+    #rightPanel { grid-column: 3; grid-row: 1 / 3; }
+    .quick-btns { display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--border); }
+    .qbtn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.3rem 0.6rem;
+      border-radius: 5px;
+      font-size: 0.65rem;
+      font-family: monospace;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .qbtn:hover { border-color: var(--accent); color: var(--accent); }
+    .ai-response {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.8rem;
+      font-size: 0.78rem;
+      line-height: 1.6;
+      color: var(--accent2);
+      min-height: 80px;
+      margin: 0.6rem 0.8rem;
+      white-space: pre-wrap;
+    }
+    .cmd-area { padding: 0 0.8rem 0.8rem; display: flex; flex-direction: column; gap: 0.5rem; }
+    .cmd-input {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.6rem 0.8rem;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.78rem;
+      resize: none;
+      outline: none;
+      height: 70px;
+    }
+    .cmd-input:focus { border-color: var(--accent); }
+    .cmd-btn {
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      border: none;
+      color: white;
+      padding: 0.65rem;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-family: monospace;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .cmd-btn:hover { opacity: 0.85; }
+    .cmd-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* activity log at bottom of right */
+    .mini-log { flex: 1; overflow-y: auto; padding: 0.5rem 0.8rem; }
+    .mini-log-entry {
+      font-size: 0.68rem;
+      padding: 0.25rem 0;
+      border-bottom: 1px solid #0d1520;
+      color: var(--muted);
+      line-height: 1.3;
+    }
+    .mini-log-entry span { color: var(--text); }
+
+    /* ── HEARTBEAT TICKER ───────────────────────────────── */
+    .hb-ticker {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 0.3rem 1rem;
+      font-size: 0.65rem;
+      color: var(--muted);
+      display: flex;
+      gap: 2rem;
+      overflow: hidden;
+    }
+    .hb-ticker span { color: var(--accent2); }
+
+    @media (max-width: 1100px) {
+      main { grid-template-columns: 1fr 1fr; }
+      #leftPanel { grid-column: 1; grid-row: 1; }
+      #centerTop { grid-column: 2; grid-row: 1; }
+      #thoughtPanel { grid-column: 1 / 3; grid-row: 2; }
+      #rightPanel { grid-column: 1 / 3; grid-row: 3; height: 400px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-pulse"></div>
+    <div>
+      <div class="logo-text">PULSE</div>
+      <div class="logo-sub">AGENTIC WALLET OS · SOLANA</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="badge badge-devnet">DEVNET</span>
+    <span class="badge badge-live" id="wsStatus">● CONNECTING</span>
+    <span style="font-size:0.7rem;color:var(--muted)">Cycle <span id="cycleNum" style="color:var(--accent2)">—</span></span>
+  </div>
+</header>
+
+<main>
+  <!-- LEFT: AGENT WALLETS -->
+  <div class="panel" id="leftPanel">
+    <div class="panel-header">
+      <span class="title">Agent Wallets</span>
+      <span id="agentCountBadge" style="color:var(--accent2)">—</span>
+    </div>
+    <div class="panel-body" id="agentList">
+      <div style="color:var(--muted);font-size:0.75rem;padding:1rem;">Initializing swarm...</div>
+    </div>
+  </div>
+
+  <!-- CENTER TOP: STATS -->
+  <div class="panel" id="centerTop">
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="s-label">Portfolio (SOL)</div>
+        <div class="s-value" id="statSOL">—</div>
+      </div>
+      <div class="stat-box">
+        <div class="s-label">Active Agents</div>
+        <div class="s-value" id="statActive">—</div>
+      </div>
+      <div class="stat-box">
+        <div class="s-label">Heartbeats</div>
+        <div class="s-value" id="statBeats" style="color:var(--purple)">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="s-label">Thoughts</div>
+        <div class="s-value" id="statThoughts" style="color:var(--yellow)">0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTER: THOUGHT STREAM -->
+  <div class="panel" id="thoughtPanel">
+    <div class="panel-header">
+      <span class="title">🧠 Agent Thought Stream — Internal Monologue</span>
+      <button onclick="clearThoughts()" style="background:none;border:1px solid var(--border);color:var(--muted);padding:0.15rem 0.5rem;border-radius:4px;font-size:0.65rem;cursor:pointer;">Clear</button>
+    </div>
+    <div class="panel-body" id="thoughtStream">
+      <div style="color:var(--muted);font-size:0.75rem;padding:1rem;">Waiting for agent thoughts...</div>
+    </div>
+  </div>
+
+  <!-- RIGHT: COMMAND CENTER + LOG -->
+  <div class="panel" id="rightPanel">
+    <div class="panel-header"><span class="title">🤖 AI Command Center</span></div>
+
+    <div class="quick-btns">
+      <button class="qbtn" onclick="cmd('What is the portfolio status right now?')">📊 Status</button>
+      <button class="qbtn" onclick="cmd('Start DCA on BONK using dca_agent_01 with 0.01 SOL every 5 minutes')">▶ Start DCA</button>
+      <button class="qbtn" onclick="cmd('Stop all DCA strategies immediately')">⏹ Stop DCA</button>
+      <button class="qbtn" onclick="cmd('Set a 7% trailing stop on all active positions')">🛡 Trail Stop</button>
+      <button class="qbtn" onclick="cmd('Run rug check on all held positions')">🔍 Rug Check</button>
+      <button class="qbtn" onclick="cmd('Emmanuel wants to grow his SOL by 5% this week. Manage it autonomously.')">🎯 Grow 5%</button>
+    </div>
+
+    <div class="ai-response" id="aiResponse">Ask the orchestrator anything in natural language...</div>
+
+    <div class="cmd-area">
+      <textarea class="cmd-input" id="cmdInput" placeholder='e.g. "Emmanuel wants to grow his SOL by 5% this week. Manage it."'></textarea>
+      <button class="cmd-btn" id="cmdBtn" onclick="sendCmd()">⚡ SEND TO ORCHESTRATOR</button>
+    </div>
+
+    <div class="panel-header" style="border-top:1px solid var(--border);">
+      <span class="title">📡 Transaction Log</span>
+    </div>
+    <div class="mini-log" id="miniLog">
+      <div class="mini-log-entry">Waiting for transactions...</div>
+    </div>
+  </div>
+</main>
+
+<div class="hb-ticker" id="ticker">
+  <div>PULSE · SOLANA DEVNET</div>
+  <div>SOL Price: <span id="tickerSol">—</span></div>
+  <div>Last Action: <span id="tickerAction">—</span></div>
+  <div>WebSocket: <span id="tickerWS">Connecting...</span></div>
+</div>
+
+<script>
+  // ── STATE ──────────────────────────────────────────────────────────────────
+  let ws = null;
+  let totalThoughts = 0;
+  let totalBeats = 0;
+  const THOUGHT_ICONS = {
+    WAKE: '⏰', READ: '📖', THINK: '🤔', PLAN: '📋',
+    EXECUTE: '⚡', OBSERVE: '👁', ALERT: '🚨', SLEEP: '💤',
+    ERROR: '❌', SUCCESS: '✅'
+  };
+
+  // ── WebSocket ──────────────────────────────────────────────────────────────
+  function connectWS() {
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    ws = new WebSocket(`${proto}//${location.host}`);
+
+    ws.onopen = () => {
+      document.getElementById('wsStatus').textContent = '● LIVE';
+      document.getElementById('wsStatus').style.color = '#10b981';
+      document.getElementById('tickerWS').textContent = 'Connected';
+      addThought({ type: 'SUCCESS', agentId: 'dashboard', message: 'Connected to Pulse WebSocket. Watching the swarm...', timestamp: new Date().toISOString() });
+    };
+
+    ws.onclose = () => {
+      document.getElementById('wsStatus').textContent = '● OFFLINE';
+      document.getElementById('wsStatus').style.color = '#ef4444';
+      document.getElementById('tickerWS').textContent = 'Reconnecting...';
+      setTimeout(connectWS, 3000);
+    };
+
+    ws.onmessage = e => {
+      try { handleMsg(JSON.parse(e.data)); }
+      catch(err) { console.error('WS parse error', err); }
+    };
+  }
+
+  function handleMsg(msg) {
+    const { type, data } = msg;
+    switch(type) {
+      case 'thought':
+        addThought(data);
+        totalThoughts++;
+        document.getElementById('statThoughts').textContent = totalThoughts;
+        break;
+      case 'portfolio_snapshot':
+      case 'portfolio_update':
+        updatePortfolio(data);
+        break;
+      case 'swarm_initialized':
+        addThought({ type: 'SUCCESS', agentId: 'system', message: `✅ ${data.message} — ${data.agentCount} agents online!`, timestamp: new Date().toISOString() });
+        refreshPortfolio();
+        break;
+      case 'heartbeat_cycle':
+        totalBeats++;
+        document.getElementById('statBeats').textContent = totalBeats;
+        document.getElementById('cycleNum').textContent = data.cycleNumber;
+        break;
+      case 'dca_execution':
+        addLog(`💰 DCA Round ${data.execution?.round} | ${data.execution?.amountAcquired} tokens acquired | <a href="https://explorer.solana.com/tx/${data.execution?.signature}?cluster=devnet" target="_blank" style="color:var(--accent2)">${shortenTx(data.execution?.signature)}</a>`);
+        refreshPortfolio();
+        break;
+      case 'stop_triggered':
+        addLog(`🚨 STOP TRIGGERED | P&L: ${data.profitLossPct?.toFixed(2)}% | ${shortenTx(data.signature)}`);
+        break;
+      case 'emergency_exit_required':
+        addLog(`🚨🚨 EMERGENCY EXIT REQUIRED — Rug detected!`);
+        break;
+      case 'offramp_executed':
+        addLog(`💸 OFF-RAMP: ${data.amountSwept?.toFixed(4)} SOL swept to cold wallet | ${shortenTx(data.signature)}`);
+        break;
+      case 'command_result':
+        document.getElementById('aiResponse').textContent = data.response;
+        document.getElementById('cmdBtn').disabled = false;
+        document.getElementById('tickerAction').textContent = data.command?.slice(0, 40) + '...';
+        refreshPortfolio();
+        break;
+      case 'agent_registered':
+        addLog(`📡 Agent online: ${data.agentId} (${data.role})`);
+        refreshPortfolio();
+        break;
+    }
+  }
+
+  // ── THOUGHT STREAM ─────────────────────────────────────────────────────────
+  function addThought(thought) {
+    const stream = document.getElementById('thoughtStream');
+
+    // Clear placeholder
+    if (stream.querySelector('[data-placeholder]')) stream.innerHTML = '';
+
+    const el = document.createElement('div');
+    el.className = `thought-entry t-${thought.type || 'OBSERVE'}`;
+
+    const time = new Date(thought.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const icon = THOUGHT_ICONS[thought.type] || '·';
+
+    el.innerHTML = `
+      <div class="t-icon">${icon}</div>
+      <div class="t-body">
+        <div class="t-agent">${thought.agentId}</div>
+        <div class="t-msg">${escHtml(thought.message)}</div>
+      </div>
+      <div class="t-time">${time}</div>
+    `;
+
+    stream.appendChild(el);
+    stream.scrollTop = stream.scrollHeight;
+
+    // Cap at 300 thoughts
+    if (stream.children.length > 300) stream.removeChild(stream.firstChild);
+  }
+
+  function clearThoughts() {
+    document.getElementById('thoughtStream').innerHTML = '';
+    totalThoughts = 0;
+    document.getElementById('statThoughts').textContent = '0';
+  }
+
+  // ── PORTFOLIO ──────────────────────────────────────────────────────────────
+  async function refreshPortfolio() {
+    try {
+      const res = await fetch('/api/portfolio');
+      const data = await res.json();
+      updatePortfolio(data);
+    } catch(e) {}
+  }
+
+  function updatePortfolio(data) {
+    document.getElementById('statSOL').textContent = data.totalPortfolioSOL?.toFixed(4) || '—';
+    document.getElementById('statActive').textContent = data.activeAgents ?? '—';
+    document.getElementById('agentCountBadge').textContent = (data.agentCount || 0) + ' agents';
+
+    if (!data.agents?.length) return;
+
+    const list = document.getElementById('agentList');
+    list.innerHTML = data.agents.map(a => {
+      const isActive = a.active;
+      const hasHB = a.heartbeatActive;
+      return `
+        <div class="agent-card ${isActive ? 'active' : ''} ${hasHB ? 'heartbeat-active' : ''}">
+          <div class="agent-top">
+            <div>
+              <div class="agent-name">${a.agentId}</div>
+              <div class="agent-role">${a.role}</div>
+            </div>
+            <div class="agent-balance">${(a.balance || 0).toFixed(5)}<br><span style="font-size:0.6rem;color:var(--muted)">SOL</span></div>
+          </div>
+          <div class="agent-status-row">
+            <span class="tag ${isActive ? 'tag-active' : 'tag-idle'}">${isActive ? '● ACTIVE' : '○ IDLE'}</span>
+            ${hasHB ? '<span class="tag tag-heartbeat">⏰ HEARTBEAT</span>' : ''}
+          </div>
+          <div class="pubkey" onclick="copyAddr('${a.publicKey}')" title="Click to copy">${(a.publicKey||'').slice(0,14)}...${(a.publicKey||'').slice(-6)}</div>
+          ${isActive ? `<div class="heartbeat-bar"><div class="heartbeat-fill" style="width:${Math.random()*60+40}%"></div></div>` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ── COMMAND ────────────────────────────────────────────────────────────────
+  async function cmd(command) {
+    document.getElementById('cmdInput').value = command;
+    await sendCmd();
+  }
+
+  async function sendCmd() {
+    const input = document.getElementById('cmdInput');
+    const btn = document.getElementById('cmdBtn');
+    const command = input.value.trim();
+    if (!command) return;
+
+    btn.disabled = true;
+    document.getElementById('aiResponse').textContent = '🤔 Orchestrator thinking...';
+    addThought({ type: 'READ', agentId: 'orchestrator', message: `Command received: "${command}"`, timestamp: new Date().toISOString() });
+
+    try {
+      const res = await fetch('/api/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command })
+      });
+      const data = await res.json();
+      document.getElementById('aiResponse').textContent = data.response || data.error;
+      input.value = '';
+    } catch(e) {
+      document.getElementById('aiResponse').textContent = 'Error: ' + e.message;
+    }
+    btn.disabled = false;
+  }
+
+  // ── LOG ────────────────────────────────────────────────────────────────────
+  function addLog(msg) {
+    const log = document.getElementById('miniLog');
+    if (log.querySelector('[data-placeholder]')) log.innerHTML = '';
+    const el = document.createElement('div');
+    el.className = 'mini-log-entry';
+    el.innerHTML = `<span style="color:var(--muted);font-size:0.6rem">${new Date().toLocaleTimeString()}</span> <span>${msg}</span>`;
+    log.appendChild(el);
+    log.scrollTop = log.scrollHeight;
+    if (log.children.length > 100) log.removeChild(log.firstChild);
+  }
+
+  // ── UTILS ──────────────────────────────────────────────────────────────────
+  function shortenTx(sig) {
+    if (!sig) return '—';
+    return sig.slice(0, 8) + '...' + sig.slice(-4);
+  }
+
+  function copyAddr(addr) {
+    navigator.clipboard.writeText(addr);
+    addLog(`📋 Copied: ${addr.slice(0, 16)}...`);
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ── PRICE TICKER ───────────────────────────────────────────────────────────
+  async function updatePriceTicker() {
+    try {
+      const res = await fetch('/api/price/So11111111111111111111111111111111111111112');
+      const data = await res.json();
+      document.getElementById('tickerSol').textContent = '$' + (data.price || 0).toFixed(2);
+    } catch(e) {}
+  }
+
+  // ── ENTER TO SEND ──────────────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    const input = document.getElementById('cmdInput');
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendCmd(); }
+    });
+  });
+
+  // ── INIT ───────────────────────────────────────────────────────────────────
+  connectWS();
+  refreshPortfolio();
+  updatePriceTicker();
+  setInterval(refreshPortfolio, 15000);
+  setInterval(updatePriceTicker, 30000);
+</script>
+</body>
+</html>

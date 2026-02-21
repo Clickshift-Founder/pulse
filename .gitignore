@@ -39,3 +39,20 @@ lerna-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+
+# Documentation guides
+*_GUIDE.md
+
+# Config and structure files
+.folderstructure
+.env.example
+
+# Folders
+agent_wallets/
+
+
+# IP sovereignty — your Governor, HeartbeatEngine, ThoughtStream logic is yours. 
+# Users run your hosted product. The protocol is open-source for the bounty requirement, 
+# but pulse.clickshift.io is your distribution and fee layer. Exactly how Uniswap is 
+# open-source but Uniswap Labs still earns fees.

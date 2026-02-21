@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pulse — Protocol Metrics</title>
+  <style>
+    :root {
+      --bg: #060b14; --surface: #0d1624; --surface2: #111e30;
+      --border: #1a2d46; --accent: #6366f1; --accent2: #22d3ee;
+      --green: #10b981; --red: #ef4444; --yellow: #f59e0b;
+      --purple: #a78bfa; --text: #e2e8f0; --muted: #4a6080;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Courier New', monospace; padding: 2rem; }
+
+    header { display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+    .back { color: var(--muted); text-decoration: none; font-size: 0.8rem; }
+    .back:hover { color: var(--accent2); }
+    h1 { font-size: 1.2rem; color: var(--accent2); letter-spacing: 2px; }
+    .subtitle { font-size: 0.7rem; color: var(--muted); }
+
+    .section-title {
+      font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px;
+      color: var(--muted); margin: 1.5rem 0 0.8rem;
+      padding-bottom: 0.4rem; border-bottom: 1px solid var(--border);
+    }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+    .grid-wide { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+
+    .metric-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.2rem;
+    }
+    .metric-card .m-label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.4rem; }
+    .metric-card .m-value { font-size: 1.8rem; font-weight: bold; line-height: 1; }
+    .metric-card .m-sub { font-size: 0.68rem; color: var(--muted); margin-top: 0.3rem; }
+
+    .color-green { color: var(--green); }
+    .color-accent { color: var(--accent2); }
+    .color-purple { color: var(--purple); }
+    .color-yellow { color: var(--yellow); }
+    .color-red { color: var(--red); }
+
+    .highlight-card {
+      background: linear-gradient(135deg, #1e1040, #0d1624);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .highlight-card .h-title { font-size: 0.7rem; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; }
+    .highlight-card .h-value { font-size: 2.4rem; font-weight: bold; color: var(--accent2); }
+    .highlight-card .h-desc { font-size: 0.75rem; color: var(--muted); margin-top: 0.4rem; }
+
+    .agent-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+    .agent-table th { text-align: left; padding: 0.5rem 0.8rem; color: var(--muted); font-size: 0.65rem; border-bottom: 1px solid var(--border); }
+    .agent-table td { padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--border); }
+    .agent-table tr:hover td { background: var(--surface2); }
+
+    .safety-bar {
+      display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.6rem;
+    }
+    .safety-bar .label { font-size: 0.72rem; width: 160px; flex-shrink: 0; }
+    .bar-track { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+    .safety-bar .pct { font-size: 0.7rem; color: var(--muted); width: 40px; text-align: right; }
+
+    .refresh-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 0.4rem 0.9rem;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      cursor: pointer;
+      margin-left: auto;
+    }
+    .refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="/" class="back">← Dashboard</a>
+    <div>
+      <h1>⚡ PULSE — Protocol Metrics</h1>
+      <div class="subtitle">Live protocol analytics · Updates every 30s</div>
+    </div>
+    <button class="refresh-btn" onclick="loadMetrics()">↻ Refresh</button>
+  </header>
+
+  <!-- HEADLINE NUMBERS -->
+  <div class="section-title">Headline Numbers</div>
+  <div class="grid">
+    <div class="highlight-card">
+      <div class="h-title">Total Value Managed (SOL)</div>
+      <div class="h-value" id="tvl">—</div>
+      <div class="h-desc">Across all active agent wallets</div>
+    </div>
+    <div class="highlight-card">
+      <div class="h-title">Rug Attacks Blocked</div>
+      <div class="h-value" style="color:var(--green)" id="rugsBlocked">—</div>
+      <div class="h-desc">Autonomous self-preservation events</div>
+    </div>
+    <div class="highlight-card">
+      <div class="h-title">Total Swaps Executed</div>
+      <div class="h-value" style="color:var(--purple)" id="swapsTotal">—</div>
+      <div class="h-desc">All-time autonomous transactions</div>
+    </div>
+  </div>
+
+  <!-- ACTIVITY METRICS -->
+  <div class="section-title">Agent Activity</div>
+  <div class="grid">
+    <div class="metric-card">
+      <div class="m-label">Heartbeats Today</div>
+      <div class="m-value color-purple" id="heartbeats">—</div>
+      <div class="m-sub">Wake-think-execute cycles</div>
+    </div>
+    <div class="metric-card">
+      <div class="m-label">Avg Cycle Time</div>
+      <div class="m-value color-accent" id="cycleTime">—</div>
+      <div class="m-sub">Milliseconds per heartbeat</div>
+    </div>
+    <div class="metric-card">
+      <div class="m-label">Active Agents</div>
+      <div class="m-value color-green" id="activeAgents">—</div>
+      <div class="m-sub">Currently running strategies</div>
+    </div>
+    <div class="metric-card">
+      <div class="m-label">Jupiter Swaps</div>
+      <div class="m-value color-accent" id="jupSwaps">—</div>
+      <div class="m-sub">Via DEX aggregator</div>
+    </div>
+  </div>
+
+  <!-- SAFETY METRICS — this is what impresses judges and investors -->
+  <div class="section-title">🛡️ Safety — The Permissioned Brain</div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.2rem;margin-bottom:1rem;">
+    <div class="safety-bar">
+      <div class="label">Governor Approval Rate</div>
+      <div class="bar-track"><div class="bar-fill" id="approvalBar" style="background:var(--green);width:0%"></div></div>
+      <div class="pct" id="approvalPct">—%</div>
+    </div>
+    <div class="safety-bar">
+      <div class="label">Transactions Blocked</div>
+      <div class="bar-track"><div class="bar-fill" id="blockedBar" style="background:var(--yellow);width:0%"></div></div>
+      <div class="pct" id="blockedPct">—</div>
+    </div>
+    <div class="safety-bar">
+      <div class="label">Rug Attacks Stopped</div>
+      <div class="bar-track"><div class="bar-fill" id="rugBar" style="background:var(--red);width:0%"></div></div>
+      <div class="pct" id="rugPct">—</div>
+    </div>
+    <p style="font-size:0.68rem;color:var(--muted);margin-top:0.8rem;">
+      The Governor layer runs 7 safety checks before signing any transaction.
+      Even if the AI hallucinates, it cannot drain a wallet.
+    </p>
+  </div>
+
+  <!-- USER METRICS -->
+  <div class="section-title">User Growth</div>
+  <div class="grid">
+    <div class="metric-card">
+      <div class="m-label">Total Users</div>
+      <div class="m-value color-accent" id="totalUsers">—</div>
+    </div>
+    <div class="metric-card">
+      <div class="m-label">Active Today</div>
+      <div class="m-value color-green" id="activeUsers">—</div>
+    </div>
+    <div class="metric-card">
+      <div class="m-label">7-Day Retention</div>
+      <div class="m-value color-yellow" id="retention">—%</div>
+    </div>
+    <div class="metric-card">
+      <div class="m-label">Protocol Revenue (SOL)</div>
+      <div class="m-value color-green" id="fees">—</div>
+      <div class="m-sub">Jupiter referral fees earned</div>
+    </div>
+  </div>
+
+  <!-- PROJECTIONS — for investors -->
+  <div class="section-title">📈 Projections (Investor View)</div>
+  <div class="grid grid-wide">
+    <div class="metric-card">
+      <div class="m-label">Projected Monthly Volume (SOL)</div>
+      <div class="m-value color-accent" id="projMonthly">—</div>
+      <div class="m-sub">Based on last 24h run rate × 30</div>
+    </div>
+    <div class="metric-card">
+      <div class="m-label">Projected Annual Revenue (USD)</div>
+      <div class="m-value color-green" id="projAnnual">$—</div>
+      <div class="m-sub">At 0.1% referral fee · $180/SOL</div>
+    </div>
+  </div>
+
+  <p style="font-size:0.65rem;color:var(--muted);margin-top:1rem;text-align:center;">
+    Pulse · pulse.clickshift.io · Built on Solana by clickshift.io 🇳🇬
+  </p>
+
+  <script>
+    async function loadMetrics() {
+      try {
+        const [metricsRes, portfolioRes] = await Promise.all([
+          fetch('/api/metrics'),
+          fetch('/api/portfolio'),
+        ]);
+
+        const { metrics } = await metricsRes.json();
+        const portfolio = await portfolioRes.json();
+
+        if (!metrics) return;
+
+        // Headline
+        document.getElementById('tvl').textContent = (portfolio.totalPortfolioSOL || 0).toFixed(4) + ' SOL';
+        document.getElementById('rugsBlocked').textContent = metrics.rugAttacksBlocked ?? 0;
+        document.getElementById('swapsTotal').textContent = metrics.totalTransactionsExecuted ?? 0;
+
+        // Activity
+        document.getElementById('heartbeats').textContent = metrics.heartbeatsExecutedToday ?? 0;
+        document.getElementById('cycleTime').textContent = (metrics.averageCycleTimeMs || 0) + 'ms';
+        document.getElementById('activeAgents').textContent = portfolio.activeAgents ?? 0;
+        document.getElementById('jupSwaps').textContent = metrics.jupiterSwapsExecuted ?? 0;
+
+        // Safety bars
+        const approvalRate = metrics.averageGovernorApprovalRate || 0;
+        const blockedCount = metrics.governorBlocksTotal || 0;
+        const rugCount = metrics.rugAttacksBlocked || 0;
+        const maxBlocked = Math.max(blockedCount, 10); // normalize bar
+
+        document.getElementById('approvalBar').style.width = approvalRate + '%';
+        document.getElementById('approvalPct').textContent = approvalRate + '%';
+        document.getElementById('blockedBar').style.width = Math.min(100, (blockedCount / maxBlocked) * 100) + '%';
+        document.getElementById('blockedPct').textContent = blockedCount;
+        document.getElementById('rugBar').style.width = Math.min(100, rugCount * 20) + '%';
+        document.getElementById('rugPct').textContent = rugCount;
+
+        // Users
+        document.getElementById('totalUsers').textContent = metrics.totalUsers ?? 0;
+        document.getElementById('activeUsers').textContent = metrics.activeUsersToday ?? 0;
+        document.getElementById('retention').textContent = (metrics.retentionRate || 0) + '%';
+        document.getElementById('fees').textContent = (metrics.totalFeesEarnedSOL || 0).toFixed(6);
+
+        // Projections
+        document.getElementById('projMonthly').textContent = (metrics.projectedMonthlyVolumeSOL || 0).toFixed(2);
+        document.getElementById('projAnnual').textContent = '$' + (metrics.projectedAnnualRevenueUSD || 0).toFixed(0);
+
+      } catch(e) {
+        console.error('Metrics load error:', e);
+      }
+    }
+
+    loadMetrics();
+    setInterval(loadMetrics, 30000);
+  </script>
+</body>
+</html>
