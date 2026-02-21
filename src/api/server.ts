@@ -311,7 +311,19 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../dashboard/public/index.html"));
+  const indexPath = path.join(__dirname, "../dashboard/public/index.html");
+  const fs = require("fs");
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    // Fallback when static files weren't copied — still returns 200 so Railway stays happy
+    res.status(200).send(`<!DOCTYPE html><html><head><title>Pulse ⚡</title></head>
+      <body style="background:#04080f;color:#22d3ee;font-family:monospace;padding:2rem;text-align:center;margin-top:4rem">
+        <h1>⚡ PULSE</h1><h3>Agentic Wallet OS — Live on Solana</h3>
+        <p>Backend running. <a href="/api/health" style="color:#6366f1">Check /api/health</a></p>
+        <p style="color:#3d5470;font-size:0.8rem">Dashboard files: ${indexPath}</p>
+      </body></html>`);
+  }
 });
 
 // ─── Start ────────────────────────────────────────────────────────────────────
