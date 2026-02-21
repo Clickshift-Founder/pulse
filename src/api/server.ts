@@ -296,8 +296,18 @@ app.get("/api/agents/:agentId/governor", async (req, res) => {
   });
 });
 
-app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", initialized, network: process.env.SOLANA_NETWORK || "devnet" });
+app.get("/api/health", (_req, res) => {
+  // This ALWAYS responds 200 — even before swarm is initialized.
+  // Railway uses this for health checks. If it times out, Railway kills the app.
+  // 'initialized: false' is fine — it just means swarm is still starting up.
+  res.status(200).json({
+    status: "ok",
+    initialized,
+    network:  process.env.SOLANA_NETWORK || "devnet",
+    agents:   initialized ? AgentWallet.listAll().length : 0,
+    uptime:   Math.floor(process.uptime()),
+    message:  initialized ? "Swarm online" : "Server alive — swarm initializing...",
+  });
 });
 
 app.get("*", (req, res) => {
@@ -307,12 +317,25 @@ app.get("*", (req, res) => {
 // ─── Start ────────────────────────────────────────────────────────────────────
 
 const PORT = parseInt(process.env.PORT || "3000");
-server.listen(PORT, async () => {
-  console.log(`\n  Dashboard: http://localhost:${PORT}`);
+
+// CRITICAL FIX: Do NOT await initializeSwarm inside listen callback.
+// Railway health-checks /api/health immediately after the port opens.
+// If swarm init blocks the event loop, health check never responds → 502.
+// Solution: listen first (port is open, health check works instantly),
+// then fire swarm init in the background via .catch() for error resilience.
+server.listen(PORT, () => {
+  console.log(`\n  ⚡ Pulse is alive — port ${PORT} open`);
+  console.log(`  Dashboard: http://localhost:${PORT}`);
   console.log(`  API:       http://localhost:${PORT}/api`);
-  console.log(`  Metrics:   http://localhost:${PORT}/api/metrics`);
+  console.log(`  Health:    http://localhost:${PORT}/api/health`);
   console.log(`  Network:   ${process.env.SOLANA_NETWORK || "devnet"}\n`);
-  await initializeSwarm();
+
+  // Non-blocking swarm initialization — server responds immediately
+  // 'initialized' flag in /api/health shows false until swarm is ready
+  initializeSwarm().catch((err) => {
+    console.error("[Pulse] Swarm init error (server still alive):", err.message);
+    // Never call process.exit() here — keep server alive regardless
+  });
 });
 
 export default app;
