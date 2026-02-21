@@ -1,8 +1,12 @@
 /**
- * server.ts (v2 — Pulse Edition)
+ * server.ts (v3 — Pulse Edition, Railway-compatible)
  *
- * REST API + WebSocket server with full thought stream support.
- * Every agent thought broadcasts live to all connected dashboard clients.
+ * KEY FIXES vs previous version:
+ *  - NO dynamic import() inside routes (caused Railway tsc --help / build fail)
+ *  - NO require() inside routes
+ *  - All imports static at top — TypeScript can analyse them fully
+ *  - esModuleInterop-safe import style for express and cors
+ *  - metricsEngine, AgentFactory, ROLE_REGISTRY imported statically
  */
 
 import express from "express";
@@ -16,6 +20,9 @@ import { AgentWallet } from "../wallet/AgentWallet";
 import { Orchestrator } from "../agent/Orchestrator";
 import { JupiterSwap, TOKENS } from "../integrations/JupiterSwap";
 import { thoughtStream } from "../heartbeat/ThoughtStream";
+import { metricsEngine } from "../agent/MetricsEngine";
+import { AgentFactory, ROLE_REGISTRY } from "../agent/AgentFactory";
+import { UserTier } from "../agent/UserSession";
 
 dotenv.config();
 
@@ -32,6 +39,7 @@ const connection = new Connection(
   "confirmed"
 );
 const jupiter = new JupiterSwap(connection);
+const agentFactory = new AgentFactory(connection); // static instance — no dynamic import needed
 
 let orchestrator: Orchestrator | null = null;
 let initialized = false;
@@ -213,15 +221,13 @@ app.get("/api/price/:mint", async (req, res) => {
 
 // ─── Agent Factory Routes ─────────────────────────────────────────────────────
 
-// Get all available roles (with lock status for a tier)
+// All roles with tier-lock status — powers the spawner UI on landing page
 app.get("/api/factory/roles", (req, res) => {
   try {
-    const { AgentFactory, ROLE_REGISTRY } = require("../agent/AgentFactory");
-    const tier = (req.query.tier as string) || "free";
-    // Return all roles with locked flag — UI shows locked ones greyed out
-    const tierOrder = ["free", "pro", "team"];
+    const tier = (req.query.tier as UserTier) || "free";
+    const tierOrder: UserTier[] = ["free", "pro", "team"];
     const userIdx = tierOrder.indexOf(tier);
-    const roles = ROLE_REGISTRY.map((r: any) => ({
+    const roles = ROLE_REGISTRY.map((r) => ({
       ...r,
       locked: tierOrder.indexOf(r.requiredTier) > userIdx,
     }));
@@ -231,24 +237,29 @@ app.get("/api/factory/roles", (req, res) => {
   }
 });
 
-// Spawn a custom agent
+// Spawn via factory (supports plain-text description OR roleKey)
 app.post("/api/factory/spawn", async (req, res) => {
   try {
-    const { AgentFactory } = await import("../agent/AgentFactory");
-    const factory = new AgentFactory(connection);
     const { userId = "demo_user", tier = "free", roleKey, customName, description } = req.body;
 
     let agent;
     if (description && !roleKey) {
-      agent = await factory.spawnFromDescription(userId, tier, description);
+      agent = await agentFactory.spawnFromDescription(userId, tier as UserTier, description);
     } else {
-      agent = await factory.spawn({ userId, tier, roleKey: roleKey || "dca_agent", customName });
+      agent = await agentFactory.spawn({
+        userId,
+        tier: tier as UserTier,
+        roleKey: roleKey || "dca_agent",
+        customName,
+      });
     }
 
-    if (orchestrator) orchestrator.registerAgent(
-      await AgentWallet.load(agent.agentId, connection),
-      { trackedMints: [] }
-    );
+    if (orchestrator) {
+      try {
+        const wallet = await AgentWallet.load(agent.agentId, connection);
+        orchestrator.registerAgent(wallet, { trackedMints: [] });
+      } catch { /* wallet may not be loadable yet — not fatal */ }
+    }
 
     broadcast("agent_spawned", agent);
     res.json({ success: true, agent });
@@ -257,13 +268,13 @@ app.post("/api/factory/spawn", async (req, res) => {
   }
 });
 
-// ─── Metrics — investor + user dashboard data ─────────────────────────────────
+// ─── Metrics — powers metrics.html investor page ─────────────────────────────
 app.get("/api/metrics", async (_req, res) => {
   try {
-    const { metricsEngine } = await import("../agent/MetricsEngine");
+    // metricsEngine is imported statically at top — no dynamic import needed
     const metrics = metricsEngine.getProtocolMetrics();
-    const agentPerfs = metricsEngine.getAgentPerformances();
-    res.json({ metrics, agentPerformances: agentPerfs });
+    const agentPerformances = metricsEngine.getAgentPerformances();
+    res.json({ metrics, agentPerformances });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
