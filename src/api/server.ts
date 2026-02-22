@@ -335,7 +335,7 @@ const PORT = parseInt(process.env.PORT || "3000");
 // If swarm init blocks the event loop, health check never responds → 502.
 // Solution: listen first (port is open, health check works instantly),
 // then fire swarm init in the background via .catch() for error resilience.
-server.listen(PORT, () => {
+server.listen(PORT, "0000", () => {
   console.log(`\n  ⚡ Pulse is alive — port ${PORT} open`);
   console.log(`  Dashboard: http://localhost:${PORT}`);
   console.log(`  API:       http://localhost:${PORT}/api`);
