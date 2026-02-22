@@ -3,9 +3,9 @@
   "version": "2.0.0",
   "description": "Multi-Agent Agentic Wallet OS on Solana - Heartbeat Architecture, Thought Stream, Jupiter Swaps",
   "main": "dist/api/server.js",
-  "scripts": {
+"scripts": {
     "build": "tsc && npm run copy-static",
-    "copy-static": "node -e \"const fs=require('fs'),path=require('path');const src='src/dashboard/public';const dst='dist/dashboard/public';fs.mkdirSync(dst,{recursive:true});fs.readdirSync(src).forEach(f=>{fs.copyFileSync(path.join(src,f),path.join(dst,f));console.log('Copied:',f)})\"",
+    "copy-static": "mkdir -p dist/dashboard/public && cp -r src/dashboard/public/* dist/dashboard/public/",
     "start": "node dist/api/server.js",
     "dev": "ts-node src/api/server.ts",
     "demo": "ts-node src/demo/runDemo.ts"
