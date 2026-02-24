@@ -235,8 +235,12 @@
       <div class="fvt">💰 Fund Your Vault</div>
       <div class="fva" id="vAddr" onclick="copyVault()">Fetching vault address...</div>
       <div class="fvbtns">
-        <button class="fvb c" onclick="copyVault()">📋 Copy</button>
+        <button class="fvb c" onclick="copyVault()">📋 Copy Address</button>
         <a class="fvb t" href="https://t.me/clicksolbot" target="_blank">🤖 Buy SOL via Clickbot</a>
+      </div>
+      <div class="fvbtns" style="margin-top:.3rem">
+        <button class="fvb" style="background:rgba(245,158,11,.08);color:var(--yellow);border-color:var(--yellow);font-size:.6rem;padding:.22rem .55rem;border-radius:4px;cursor:pointer;border:1px solid;" onclick="drainVault()">⬇ Drain All → Vault</button>
+        <a class="fvb" style="background:rgba(34,211,238,.05);color:var(--a2);border-color:rgba(34,211,238,.3);font-size:.6rem;padding:.22rem .55rem;border-radius:4px;cursor:pointer;border:1px solid;text-decoration:none;" href="/api/proof/wallets" target="_blank">📋 Wallet Proof</a>
       </div>
       <div class="fvn">Fund this address → orchestrator auto-distributes to all agents</div>
     </div>
@@ -558,6 +562,17 @@
       addTx('CREATE',`✅ Simulation complete — ${d.eventsGenerated||'?'} events | All metrics populated`);
     }catch(e){ addTx('BLOCK','Simulation error: '+e.message); }
     btn.disabled=false; btn.textContent='🎬 Run Full Demo Simulation';
+  }
+
+  async function drainVault(){
+    if(!confirm('Recall ALL agent SOL back to vault? (useful for demo reset)')) return;
+    addTx('RECALL','⬇ Draining all agent wallets → vault...');
+    try{
+      const d=await(await fetch('/api/vault/drain',{method:'POST'})).json();
+      const recalled=Object.entries(d.results||{}).filter(([,v])=>v.recalled>0);
+      addTx('RECALL',`✅ Drain complete: ${recalled.length} agents recalled | ${recalled.map(([id,v])=>`${id}: ${Number(v.recalled).toFixed(4)} SOL`).join(' | ')}`);
+    }catch(e){ addTx('BLOCK','Drain error: '+e.message); }
+    refreshAll();
   }
 
   // PRICE

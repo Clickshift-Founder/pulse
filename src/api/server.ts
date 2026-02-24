@@ -631,6 +631,75 @@ app.post("/api/simulate", (req, res) => {
   })().catch((e) => console.error("[Simulate] Error:", e?.message));
 });
 
+// ─── Drain Vault (demo helper — empties all agent wallets back to orchestrator) ─
+
+app.post("/api/vault/drain", async (_req, res) => {
+  if (!orchestrator) return res.status(503).json({ error: "Swarm not ready" });
+  const results: Record<string, any> = {};
+  try {
+    const all = AgentWallet.listAll();
+    const vaultEntry = all.find((a) => a.agentId === "orchestrator_main");
+    if (!vaultEntry) return res.status(503).json({ error: "Vault not found" });
+
+    for (const entry of all) {
+      if (entry.agentId === "orchestrator_main") continue;
+      try {
+        const w = await AgentWallet.load(entry.agentId, connection);
+        const bal = await w.getBalance();
+        if (bal > 0.002) {
+          const amount = parseFloat((bal - 0.001).toFixed(9));
+          const sig = await w.sendSOL(vaultEntry.publicKey, amount);
+          results[entry.agentId] = { recalled: amount, sig };
+          thoughtStream.think("orchestrator_main", "EXECUTE", `↩ Drained ${amount.toFixed(4)} SOL from ${entry.agentId} → vault`);
+          broadcast("governor_recall", { agentId: entry.agentId, amount, signature: sig });
+        } else {
+          results[entry.agentId] = { recalled: 0, reason: "balance too low" };
+        }
+      } catch (e: any) {
+        results[entry.agentId] = { error: e.message };
+      }
+    }
+
+    thoughtStream.success("orchestrator_main", "🏦 Vault drain complete. All agent SOL recalled.");
+    res.json({ success: true, results });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Wallet Proof — returns all wallet addresses + devnet explorer links ──────
+// Use these in your bounty submission as proof of programmatic wallet creation
+
+app.get("/api/proof/wallets", async (_req, res) => {
+  try {
+    const all = AgentWallet.listAll();
+    const network = process.env.SOLANA_NETWORK || "devnet";
+    const cluster = network === "mainnet-beta" ? "" : "?cluster=devnet";
+    const proofs = all.map((a) => ({
+      agentId: a.agentId,
+      role: a.agentRole,          // WalletMetadata uses agentRole, not role
+      publicKey: a.publicKey,
+      explorerAddress: `https://explorer.solana.com/address/${a.publicKey}${cluster}`,
+      created: a.createdAt || "at startup",
+      totalTransactions: a.totalTransactions || 0,
+    }));
+    res.json({
+      totalAgents: proofs.length,
+      network,
+      note: "Each wallet was created programmatically by AgentWallet.loadOrCreate(). Keys encrypted with AES-256-GCM. Agents sign transactions autonomously.",
+      bountyEvidence: {
+        walletCreation:    "Programmatic keypair generation via @solana/web3.js Keypair.generate()",
+        keyStorage:        "AES-256-GCM encryption with scrypt KDF — private key never exposed",
+        autonomousSigning: "Agents call signAndSendVersionedTransaction() without user interaction",
+        dAppInteraction:   "Jupiter V6 DEX — quote-api.jup.ag/v6 — fully programmatic",
+      },
+      wallets: proofs,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── Catch-all → serve landing page ──────────────────────────────────────────
 
 const fs = require("fs");
