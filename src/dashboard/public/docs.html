@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pulse — Documentation</title>
+  <style>
+    :root{--bg:#060b14;--surface:#0d1624;--s2:#111e30;--border:#1a2d46;--accent:#6366f1;--a2:#22d3ee;--green:#10b981;--red:#ef4444;--yellow:#f59e0b;--purple:#a78bfa;--text:#e2e8f0;--muted:#4a6080;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono','Courier New',monospace;font-size:14px;line-height:1.7;}
+    a{color:var(--a2);text-decoration:none;} a:hover{text-decoration:underline;}
+    header{background:linear-gradient(90deg,#060b14,#0d1a30,#060b14);border-bottom:1px solid var(--border);padding:.7rem 1.5rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+    .logo{display:flex;align-items:center;gap:.6rem;text-decoration:none;}
+    .pdot{width:18px;height:18px;border-radius:50%;background:var(--accent);box-shadow:0 0 18px var(--accent);animation:glow 2s infinite;}
+    @keyframes glow{0%,100%{box-shadow:0 0 8px var(--accent)}50%{box-shadow:0 0 22px var(--accent)}}
+    .ltext{font-weight:bold;letter-spacing:4px;}
+    nav{display:flex;gap:1rem;}
+    nav a{font-size:.68rem;color:var(--muted);padding:.2rem .5rem;border-radius:4px;border:1px solid transparent;}
+    nav a:hover{color:var(--a2);border-color:var(--border);}
+
+    .layout{display:grid;grid-template-columns:240px 1fr;min-height:calc(100vh - 50px);}
+    @media(max-width:768px){.layout{grid-template-columns:1fr;}}
+
+    /* Sidebar */
+    .sidebar{border-right:1px solid var(--border);padding:1.5rem 1rem;position:sticky;top:50px;height:calc(100vh - 50px);overflow-y:auto;}
+    .scat{font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:.5rem;margin-top:1.2rem;}
+    .scat:first-child{margin-top:0;}
+    .slink{display:block;font-size:.72rem;color:var(--muted);padding:.28rem .5rem;border-radius:4px;margin-bottom:.15rem;}
+    .slink:hover{color:var(--a2);background:rgba(34,211,238,.05);}
+    .slink.active{color:var(--a2);background:rgba(99,102,241,.1);border-left:2px solid var(--accent);}
+
+    /* Content */
+    .content{padding:2rem;max-width:800px;}
+    h1{font-size:1.8rem;font-weight:bold;margin-bottom:.5rem;background:linear-gradient(90deg,var(--accent),var(--a2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+    h2{font-size:1.1rem;font-weight:bold;color:var(--a2);margin:2.5rem 0 .8rem;padding-bottom:.4rem;border-bottom:1px solid var(--border);}
+    h3{font-size:.85rem;font-weight:bold;color:var(--accent);margin:1.5rem 0 .5rem;}
+    p{color:#a0b8d0;margin-bottom:1rem;font-size:.82rem;}
+    ul,ol{margin:.5rem 0 1rem 1.2rem;color:#a0b8d0;font-size:.82rem;}
+    li{margin-bottom:.35rem;}
+    code{background:var(--s2);border:1px solid var(--border);padding:.1rem .35rem;border-radius:3px;font-size:.78rem;color:var(--a2);}
+    pre{background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:1rem;overflow-x:auto;margin:1rem 0;font-size:.75rem;line-height:1.6;}
+    pre code{background:none;border:none;padding:0;color:#b0c8e8;}
+
+    /* Cards */
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem 1.2rem;margin:.6rem 0;}
+    .card.accent{border-color:rgba(99,102,241,.3);}
+    .card.green{border-color:rgba(16,185,129,.3);}
+    .card.yellow{border-color:rgba(245,158,11,.3);}
+    .card.red{border-color:rgba(239,68,68,.3);}
+    .card-title{font-size:.75rem;font-weight:bold;margin-bottom:.4rem;}
+    .card-title.c-accent{color:var(--accent);}
+    .card-title.c-green{color:var(--green);}
+    .card-title.c-yellow{color:var(--yellow);}
+    .card-title.c-red{color:var(--red);}
+
+    /* Agent table */
+    table{width:100%;border-collapse:collapse;font-size:.75rem;margin:1rem 0;}
+    th{text-align:left;padding:.5rem .7rem;background:var(--s2);color:var(--muted);font-size:.62rem;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border);}
+    td{padding:.5rem .7rem;border-bottom:1px solid rgba(26,45,70,.5);color:#a0b8d0;vertical-align:top;}
+    tr:hover td{background:rgba(26,45,70,.3);}
+
+    /* Badge */
+    .badge{display:inline-block;font-size:.56rem;padding:.1rem .45rem;border-radius:4px;margin-left:.4rem;vertical-align:middle;}
+    .badge.live{background:rgba(16,185,129,.12);color:var(--green);border:1px solid rgba(16,185,129,.25);}
+    .badge.soon{background:rgba(245,158,11,.1);color:var(--yellow);border:1px solid rgba(245,158,11,.2);}
+
+    /* Callout */
+    .callout{background:rgba(99,102,241,.07);border-left:3px solid var(--accent);padding:.8rem 1rem;border-radius:0 6px 6px 0;margin:1rem 0;font-size:.8rem;color:#a0b8d0;}
+    .callout.warn{background:rgba(245,158,11,.07);border-color:var(--yellow);}
+    .callout.success{background:rgba(16,185,129,.07);border-color:var(--green);}
+
+    /* API block */
+    .api-route{display:flex;align-items:center;gap:.6rem;background:var(--s2);border:1px solid var(--border);border-radius:5px;padding:.4rem .8rem;margin:.4rem 0;font-size:.75rem;}
+    .method{font-weight:bold;padding:.15rem .4rem;border-radius:3px;font-size:.65rem;}
+    .method.get{background:rgba(34,211,238,.1);color:var(--a2);}
+    .method.post{background:rgba(16,185,129,.1);color:var(--green);}
+    .method.delete{background:rgba(239,68,68,.1);color:var(--red);}
+    .route-path{color:var(--text);}
+    .route-desc{color:var(--muted);margin-left:auto;font-size:.68rem;}
+
+    ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="/" class="logo">
+    <div class="pdot"></div>
+    <div><span class="ltext">PULSE</span> <span style="font-size:.6rem;color:var(--muted);letter-spacing:2px">DOCS</span></div>
+  </a>
+  <nav>
+    <a href="/">Home</a>
+    <a href="/dashboard.html">Dashboard</a>
+    <a href="/metrics.html">Metrics</a>
+    <a href="https://github.com" target="_blank">GitHub</a>
+  </nav>
+</header>
+
+<div class="layout">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="scat">Overview</div>
+    <a href="#what-is-pulse" class="slink">What is Pulse?</a>
+    <a href="#architecture" class="slink">Architecture</a>
+    <a href="#heartbeat" class="slink">Heartbeat Architecture</a>
+
+    <div class="scat">Agents</div>
+    <a href="#agent-swarm" class="slink">The 6-Agent Swarm</a>
+    <a href="#orchestrator" class="slink">Orchestrator (Vault)</a>
+    <a href="#dca-agent" class="slink">DCA Agent</a>
+    <a href="#trailing-stop" class="slink">Trailing Stop</a>
+    <a href="#risk-manager" class="slink">Risk Manager</a>
+    <a href="#offramp" class="slink">Off-Ramp Agent</a>
+    <a href="#factory" class="slink">Agent Factory</a>
+
+    <div class="scat">Safety</div>
+    <a href="#governor" class="slink">Governor (Permissioned Brain)</a>
+    <a href="#rugcheck" class="slink">RugCheck Integration</a>
+    <a href="#mission" class="slink">Mission System</a>
+
+    <div class="scat">Integrations</div>
+    <a href="#jupiter" class="slink">Jupiter DEX</a>
+    <a href="#clickbot" class="slink">Clickbot Bridge</a>
+    <a href="#wallets" class="slink">Wallet Architecture</a>
+
+    <div class="scat">API</div>
+    <a href="#api-reference" class="slink">REST API</a>
+    <a href="#websocket" class="slink">WebSocket Events</a>
+
+    <div class="scat">Deploy</div>
+    <a href="#env-vars" class="slink">Environment Variables</a>
+    <a href="#deployment" class="slink">Railway Deployment</a>
+  </div>
+
+  <!-- Main Content -->
+  <div class="content">
+
+    <h1>Pulse Documentation</h1>
+    <p style="color:var(--a2);font-size:.85rem;">The Agentic Wallet OS on Solana — Heartbeat Architecture · Permissioned Brain · Multi-Agent Swarm</p>
+    <p style="font-size:.75rem;color:var(--muted);">Built for Superteam Nigeria DeFi Bounty · <a href="https://clickshift.io">clickshift.io</a> 🇳🇬</p>
+
+    <!-- WHAT IS PULSE -->
+    <h2 id="what-is-pulse">What is Pulse?</h2>
+    <p>Pulse is a multi-agent DeFi wallet operating system on Solana. Rather than a single bot that executes commands, Pulse is a <strong>swarm of specialized autonomous agents</strong> that wake up on their own, reason about market conditions, and execute strategies — all governed by a Permissioned Brain that makes unsafe trades mathematically impossible.</p>
+
+    <div class="callout success">
+      <strong>Core thesis:</strong> "The AI cannot harm you even if it hallucinates." Every transaction passes through the Governor's 7-layer safety system before any SOL can move.
+    </div>
+
+    <p>Users fund one vault address. The Orchestrator distributes capital, coordinates agents, and sweeps profits to a cold wallet automatically. The user watches it work in real time via the live thought stream.</p>
+
+    <!-- ARCHITECTURE -->
+    <h2 id="architecture">System Architecture</h2>
+    <pre><code>User (Phantom/Clickbot)
+       │
+       ▼
+  ┌─────────────────────────────────────────┐
+  │           ORCHESTRATOR (Vault)          │  ← AI brain + treasury
+  │    Receives commands, distributes       │
+  │    capital, coordinates swarm           │
+  └──────────┬─────────────┬───────────────┘
+             │   GOVERNOR  │  ← Gatekeeper: 7 safety checks
+             │  (No wallet)│    before EVERY transaction
+             │             │
+  ┌──────────▼─────────────▼───────────────┐
+  │            AGENT SWARM                 │
+  │  DCA Agent │ Trailing Stop │ Scout     │
+  │  Risk Mgr  │ Off-Ramper    │ Custom    │
+  └──────────────────────────────────────── ┘
+             │
+             ▼
+         Jupiter V6 DEX
+    (Raydium + Orca + Meteora)</code></pre>
+
+    <!-- HEARTBEAT -->
+    <h2 id="heartbeat">Heartbeat Architecture</h2>
+    <p>Every agent has a <code>HeartbeatEngine</code> — a <code>setInterval</code> loop that fires on a schedule. On each wake cycle, the agent:</p>
+    <ol>
+      <li>Reads <code>HEARTBEAT.md</code> — the living directive file (checks for EMERGENCY_STOP)</li>
+      <li>Reads portfolio state and current prices</li>
+      <li>Thinks — applies strategy logic or AI reasoning</li>
+      <li>Plans — decides what action to take</li>
+      <li>Executes — submits to Governor for approval</li>
+      <li>Sleeps — logs result, waits for next interval</li>
+    </ol>
+    <div class="callout">This is what makes Pulse an OS, not a bot. Agents are <strong>self-directing</strong> — they don't need to be called. They wake themselves.</div>
+
+    <!-- AGENT SWARM -->
+    <h2 id="agent-swarm">The 6-Agent Swarm</h2>
+    <table>
+      <tr><th>Agent</th><th>Role</th><th>Heartbeat</th><th>Strategy</th><th>Status</th></tr>
+      <tr><td>orchestrator_main</td><td>Vault + AI Brain</td><td>60s</td><td>Capital allocation, NL commands</td><td><span class="badge live">LIVE</span></td></tr>
+      <tr><td>dca_agent_01</td><td>Dollar-Cost Averager</td><td>45s</td><td>Jupiter swaps on schedule</td><td><span class="badge live">LIVE</span></td></tr>
+      <tr><td>trailing_agent_01</td><td>Stop-Loss Protector</td><td>30s</td><td>Price monitor + auto-exit</td><td><span class="badge live">LIVE</span></td></tr>
+      <tr><td>scout_agent_01</td><td>Market Scout</td><td>90s</td><td>Token discovery, new pool detection</td><td><span class="badge live">LIVE</span></td></tr>
+      <tr><td>risk_manager_01</td><td>Portfolio Risk Manager</td><td>75s</td><td>RugCheck scans, concentration limits</td><td><span class="badge live">LIVE</span></td></tr>
+      <tr><td>offramp_agent_01</td><td>Profit Sweeper</td><td>120s</td><td>P&amp;L monitor + cold wallet sweep</td><td><span class="badge live">LIVE</span></td></tr>
+    </table>
+
+    <h2 id="orchestrator">Orchestrator — The Vault</h2>
+    <p>The orchestrator's wallet <strong>is</strong> the vault. Users fund this single address. The orchestrator distributes capital to sub-agents based on their role weights (DCA gets 40%, Trailing gets 25%, etc.). All profits flow back here via the off-ramper before being swept to the cold wallet.</p>
+    <p>The orchestrator also accepts natural language commands via the Command Centre in the dashboard. Commands like "Change mission to conservative mode" instantly update all agents' directives and are broadcast to the entire swarm.</p>
+
+    <h2 id="governor">Governor — The Permissioned Brain</h2>
+    <p>The Governor has no wallet — it is a decision engine, not an agent. It sits between every AI decision and wallet signing. No transaction can execute without passing all 7 checks:</p>
+    <div class="card accent">
+      <div class="card-title c-accent">7 Governor Safety Checks</div>
+      <ol style="font-size:.78rem;color:#a0b8d0;">
+        <li><strong>Balance check</strong> — sufficient SOL for transaction + gas</li>
+        <li><strong>Single-tx limit</strong> — amount ≤ <code>GOVERNOR_MAX_SINGLE_TX_SOL</code> (default 0.5 SOL)</li>
+        <li><strong>Daily spend limit</strong> — total today ≤ <code>GOVERNOR_DAILY_LIMIT_SOL</code> (default 2.0 SOL)</li>
+        <li><strong>Price impact</strong> — slippage ≤ <code>GOVERNOR_MAX_PRICE_IMPACT_PCT</code> (default 3%)</li>
+        <li><strong>Liquidity check</strong> — pool TVL ≥ <code>GOVERNOR_MIN_LIQUIDITY_USD</code> (default $50K)</li>
+        <li><strong>Blacklist check</strong> — token not in blacklisted set</li>
+        <li><strong>Rug check</strong> — RugCheck.xyz score below threshold</li>
+      </ol>
+    </div>
+    <p>The Governor can also <strong>recall funds</strong> from any agent back to the vault — a defensive reversal mechanism. This is the ultimate safety backstop: if an agent misbehaves, its entire allocation can be reclaimed instantly.</p>
+
+    <h2 id="mission">Mission System</h2>
+    <p>Every agent reads a shared mission directive. The default mission is set in <code>HEARTBEAT.md</code> and can be changed via the Command Centre in real time.</p>
+    <pre><code>// Change mission via dashboard command:
+"Change mission: conservative mode — stop all new buys, protect capital"
+
+// The orchestrator:
+//  1. Updates mission text
+//  2. Broadcasts to all agents via ThoughtStream
+//  3. Governor acknowledges and adjusts approval thresholds
+//  4. Mission progress bar resets in dashboard</code></pre>
+
+    <h2 id="factory">Agent Factory — Self-Generating Engine</h2>
+    <p>Users can spawn custom agents from a description. The factory maps plain-text intent to the right agent role:</p>
+    <pre><code>// Example factory spawn:
+POST /api/factory/spawn
+{ "description": "watch whale wallets and copy their trades", "tier": "pro" }
+
+// Factory maps "whale" → whale_watcher role
+// Creates Ed25519 keypair on Solana
+// Encrypts with AES-256-GCM
+// Starts heartbeat
+// Registers with Orchestrator</code></pre>
+    <p>Available roles: <code>dca_agent</code> · <code>trailing_stop</code> · <code>sniper_agent</code> · <code>whale_watcher</code> · <code>arbitrage_agent</code> · <code>yield_farmer</code> · <code>sentiment_trader</code></p>
+
+    <h2 id="jupiter">Jupiter DEX Integration</h2>
+    <p>All swaps route through Jupiter V6 — the leading DEX aggregator on Solana. Jupiter automatically finds the best route across Raydium, Orca, Meteora, Phoenix, and all other pools. Pulse earns a referral fee on every swap routed through it.</p>
+    <pre><code>// Swap flow:
+Governor.approveSwap(amountSOL, targetMint)
+  → Jupiter.getQuote(inputMint, outputMint, amount, slippageBps)
+  → Jupiter.executeSwap(wallet, quoteResponse)
+  → on-chain transaction signed autonomously</code></pre>
+
+    <h2 id="clickbot">Clickbot Integration</h2>
+    <p>Pulse integrates with <a href="https://t.me/clicksolbot" target="_blank">Clickbot</a> — a Telegram-based Solana wallet bot — for two use cases:</p>
+    <ul>
+      <li><strong>On-ramp:</strong> Users who don't have SOL can buy it via Clickbot using NGN/card and send to their vault address</li>
+      <li><strong>Off-ramp:</strong> Profit sweeps can be forwarded to Clickbot for fiat conversion (NGN/USD via P2P)</li>
+    </ul>
+
+    <h2 id="wallets">Wallet Architecture</h2>
+    <div class="card">
+      <div class="card-title c-accent">Vault Wallet (Orchestrator)</div>
+      <p style="font-size:.78rem;color:#a0b8d0;margin:0">Master treasury. Users fund this address. Orchestrator distributes to sub-agents. Created at first startup and persisted in <code>agent_wallets/orchestrator_main.json</code>.</p>
+    </div>
+    <div class="card">
+      <div class="card-title c-green">Agent Wallets (Sub-agents)</div>
+      <p style="font-size:.78rem;color:#a0b8d0;margin:0">Each agent has its own Ed25519 keypair, encrypted with AES-256-GCM using <code>ENCRYPTION_SECRET</code>. Stored in <code>agent_wallets/</code> — NOT in git. The agent can sign transactions autonomously without user interaction.</p>
+    </div>
+    <div class="card">
+      <div class="card-title c-yellow">Cold Wallet (Off-ramp destination)</div>
+      <p style="font-size:.78rem;color:#a0b8d0;margin:0">Your personal external wallet (Phantom, etc.). Set via <code>OFFRAMP_DESTINATION</code> env var. Profits sweep here at the configured threshold (default 15%). Clickbot can convert these to fiat.</p>
+    </div>
+    <div class="callout warn">⚠️ Back up <code>ENCRYPTION_SECRET</code> and <code>agent_wallets/</code> offline. Losing <code>ENCRYPTION_SECRET</code> means losing access to all agent wallets.</div>
+
+    <!-- API REFERENCE -->
+    <h2 id="api-reference">REST API Reference</h2>
+
+    <h3>Core</h3>
+    <div class="api-route"><span class="method get">GET</span><span class="route-path">/api/health</span><span class="route-desc">Server + swarm status</span></div>
+    <div class="api-route"><span class="method get">GET</span><span class="route-path">/api/portfolio</span><span class="route-desc">All agent balances + totals</span></div>
+    <div class="api-route"><span class="method post">POST</span><span class="route-path">/api/execute</span><span class="route-desc">Natural language command → Orchestrator AI</span></div>
+    <div class="api-route"><span class="method get">GET</span><span class="route-path">/api/vault</span><span class="route-desc">Vault address + balance</span></div>
+    <div class="api-route"><span class="method get">GET</span><span class="route-path">/api/mission</span><span class="route-desc">Current mission + progress</span></div>
+    <div class="api-route"><span class="method post">POST</span><span class="route-path">/api/mission</span><span class="route-desc">Update mission text</span></div>
+
+    <h3>Agents</h3>
+    <div class="api-route"><span class="method get">GET</span><span class="route-path">/api/agents</span><span class="route-desc">List all agent wallets</span></div>
+    <div class="api-route"><span class="method post">POST</span><span class="route-path">/api/agents/:id/activate</span><span class="route-desc">Start agent heartbeat</span></div>
+    <div class="api-route"><span class="method post">POST</span><span class="route-path">/api/agents/:id/sleep</span><span class="route-desc">Pause agent heartbeat</span></div>
+    <div class="api-route"><span class="method post">POST</span><span class="route-path">/api/agents/:id/recall</span><span class="route-desc">Governor: recall funds → vault</span></div>
+    <div class="api-route"><span class="method delete">DEL</span><span class="route-path">/api/agents/:id/sack</span><span class="route-desc">Recall + terminate agent</span></div>
+
+    <h3>Governor</h3>
+    <div class="api-route"><span class="method get">GET</span><span class="route-path">/api/governor/status</span><span class="route-desc">Spending window + approval rate</span></div>
+    <div class="api-route"><span class="method get">GET</span><span class="route-path">/api/agents/:id/governor</span><span class="route-desc">Per-agent Governor rules</span></div>
+
+    <h3>Factory</h3>
+    <div class="api-route"><span class="method get">GET</span><span class="route-path">/api/factory/roles?tier=free</span><span class="route-desc">Available roles with tier lock</span></div>
+    <div class="api-route"><span class="method post">POST</span><span class="route-path">/api/factory/spawn</span><span class="route-desc">Spawn agent from description or roleKey</span></div>
+
+    <h3>Analytics</h3>
+    <div class="api-route"><span class="method get">GET</span><span class="route-path">/api/metrics</span><span class="route-desc">Protocol metrics for investors</span></div>
+    <div class="api-route"><span class="method get">GET</span><span class="route-path">/api/price/:mint</span><span class="route-desc">Token price via Jupiter</span></div>
+    <div class="api-route"><span class="method post">POST</span><span class="route-path">/api/simulate</span><span class="route-desc">Run full demo simulation</span></div>
+    <div class="api-route"><span class="method get">GET</span><span class="route-path">/api/thoughts</span><span class="route-desc">Recent thought stream</span></div>
+
+    <!-- WEBSOCKET -->
+    <h2 id="websocket">WebSocket Events</h2>
+    <p>Connect to <code>wss://pulse.clickshift.io</code>. On connect, last 40 thoughts are replayed. Events are JSON: <code>{ type, data, timestamp }</code>.</p>
+    <table>
+      <tr><th>Event Type</th><th>Description</th></tr>
+      <tr><td><code>thought</code></td><td>Agent consciousness log entry</td></tr>
+      <tr><td><code>heartbeat_cycle</code></td><td>Agent woke + completed a cycle</td></tr>
+      <tr><td><code>dca_execution</code></td><td>DCA swap executed (includes tx signature)</td></tr>
+      <tr><td><code>governor_block</code></td><td>Transaction rejected by Governor</td></tr>
+      <tr><td><code>governor_recall</code></td><td>Funds recalled from agent to vault</td></tr>
+      <tr><td><code>rug_blocked</code></td><td>Rug detection prevented entry</td></tr>
+      <tr><td><code>risk_halt</code></td><td>Risk Manager halted an agent</td></tr>
+      <tr><td><code>stop_triggered</code></td><td>Trailing stop exit executed</td></tr>
+      <tr><td><code>offramp_executed</code></td><td>Profit swept to cold wallet</td></tr>
+      <tr><td><code>mission_changed</code></td><td>Mission updated + broadcast to swarm</td></tr>
+      <tr><td><code>agent_spawned</code></td><td>Factory created a new agent</td></tr>
+      <tr><td><code>agent_sacked</code></td><td>Agent terminated by user</td></tr>
+      <tr><td><code>capital_distributed</code></td><td>Vault → agents capital split</td></tr>
+    </table>
+
+    <pre><code>// WebSocket client example:
+const ws = new WebSocket('wss://pulse.clickshift.io');
+ws.onmessage = (e) => {
+  const { type, data, timestamp } = JSON.parse(e.data);
+  if (type === 'dca_execution') {
+    console.log('Swap!', data.execution.amountSpent, 'SOL →', data.execution.amountAcquired, 'BONK');
+    console.log('Explorer: https://explorer.solana.com/tx/' + data.execution.signature + '?cluster=devnet');
+  }
+};</code></pre>
+
+    <!-- ENV VARS -->
+    <h2 id="env-vars">Environment Variables</h2>
+    <table>
+      <tr><th>Variable</th><th>Required</th><th>Description</th></tr>
+      <tr><td><code>ENCRYPTION_SECRET</code></td><td>✅ Yes</td><td>64-char hex for AES-256-GCM wallet encryption</td></tr>
+      <tr><td><code>SOLANA_RPC_URL</code></td><td>✅ Yes</td><td>Solana RPC endpoint (devnet or mainnet)</td></tr>
+      <tr><td><code>OPENAI_API_KEY</code></td><td>Optional</td><td>GPT-4o-mini for AI reasoning. Falls back to rule-based</td></tr>
+      <tr><td><code>OFFRAMP_DESTINATION</code></td><td>Optional</td><td>Cold wallet address for profit sweeps</td></tr>
+      <tr><td><code>GOVERNOR_MAX_SINGLE_TX_SOL</code></td><td>Optional</td><td>Max SOL per transaction (default: 0.5)</td></tr>
+      <tr><td><code>GOVERNOR_DAILY_LIMIT_SOL</code></td><td>Optional</td><td>Max SOL spend per day (default: 2.0)</td></tr>
+      <tr><td><code>GOVERNOR_MAX_PRICE_IMPACT_PCT</code></td><td>Optional</td><td>Max slippage % (default: 3)</td></tr>
+      <tr><td><code>SOLANA_NETWORK</code></td><td>Optional</td><td>devnet or mainnet-beta</td></tr>
+      <tr><td><code>PORT</code></td><td>Auto</td><td>Set by Railway automatically</td></tr>
+    </table>
+
+    <!-- DEPLOYMENT -->
+    <h2 id="deployment">Railway Deployment</h2>
+    <pre><code># 1. Push to GitHub
+git add . && git commit -m "deploy" && git push
+
+# 2. Railway auto-deploys from GitHub
+# Build: npm run build (tsc + copy static files)
+# Start: node dist/api/server.js
+
+# 3. Add custom domain in Railway Settings → Networking
+# Point CNAME in Cloudflare to *.up.railway.app
+# Set Cloudflare SSL to "Full" mode
+
+# 4. Set all env vars in Railway → Variables tab
+
+# 5. Visit https://pulse.clickshift.io
+# Test: https://pulse.clickshift.io/api/health</code></pre>
+
+    <div class="callout success">
+      <strong>Built by clickshift.io 🇳🇬</strong> — Superteam Nigeria DeFi Bounty submission.<br/>
+      Live at <a href="https://pulse.clickshift.io">pulse.clickshift.io</a>
+    </div>
+
+    <p style="margin-top:3rem;font-size:.7rem;color:var(--muted);text-align:center;">
+      Pulse · Agentic Wallet OS · Solana Devnet · &copy; 2026 clickshift.io
+    </p>
+
+  </div>
+</div>
+
+</body>
+</html>

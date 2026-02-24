@@ -3,627 +3,588 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Pulse — Agentic Wallet OS</title>
+  <title>Pulse — Live Agent Dashboard</title>
   <style>
-    :root {
-      --bg: #060b14;
-      --surface: #0d1624;
-      --surface2: #111e30;
-      --border: #1a2d46;
-      --accent: #6366f1;
-      --accent2: #22d3ee;
-      --green: #10b981;
-      --red: #ef4444;
-      --yellow: #f59e0b;
-      --purple: #a78bfa;
-      --text: #e2e8f0;
-      --muted: #4a6080;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'JetBrains Mono', 'Courier New', monospace;
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
+    :root{--bg:#060b14;--surface:#0d1624;--s2:#111e30;--border:#1a2d46;--accent:#6366f1;--a2:#22d3ee;--green:#10b981;--red:#ef4444;--yellow:#f59e0b;--purple:#a78bfa;--text:#e2e8f0;--muted:#4a6080;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono','Courier New',monospace;min-height:100vh;overflow-x:hidden;font-size:14px;}
 
-    /* ── HEADER ─────────────────────────────────────────── */
-    header {
-      background: linear-gradient(90deg, #060b14 0%, #0d1a30 50%, #060b14 100%);
-      border-bottom: 1px solid var(--border);
-      padding: 0.8rem 2rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-    }
-    .logo-pulse {
-      width: 28px; height: 28px;
-      border-radius: 50%;
-      background: var(--accent);
-      box-shadow: 0 0 20px var(--accent);
-      animation: pulse-glow 2s ease-in-out infinite;
-    }
-    @keyframes pulse-glow {
-      0%, 100% { box-shadow: 0 0 10px var(--accent), 0 0 20px var(--accent); }
-      50% { box-shadow: 0 0 20px var(--accent), 0 0 40px var(--accent), 0 0 60px var(--accent); }
-    }
-    .logo-text { font-size: 1.4rem; font-weight: bold; letter-spacing: 4px; color: var(--text); }
-    .logo-sub { font-size: 0.65rem; color: var(--muted); letter-spacing: 2px; }
-    .header-right { display: flex; align-items: center; gap: 1.2rem; }
-    .badge {
-      padding: 0.2rem 0.7rem;
-      border-radius: 20px;
-      font-size: 0.68rem;
-      letter-spacing: 1px;
-      font-weight: bold;
-    }
-    .badge-devnet { background: #052e16; color: var(--green); border: 1px solid #166534; }
-    .badge-live { background: #1e1040; color: var(--accent); border: 1px solid var(--accent); animation: blink-border 1.5s infinite; }
-    @keyframes blink-border { 0%, 100% { border-color: var(--accent); } 50% { border-color: transparent; } }
+    header{background:linear-gradient(90deg,#060b14,#0d1a30,#060b14);border-bottom:1px solid var(--border);padding:.7rem 1.5rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;flex-wrap:wrap;gap:.5rem;}
+    .logo{display:flex;align-items:center;gap:.6rem;text-decoration:none;}
+    .pdot{width:22px;height:22px;border-radius:50%;background:var(--accent);box-shadow:0 0 18px var(--accent);animation:pglow 2s ease-in-out infinite;}
+    @keyframes pglow{0%,100%{box-shadow:0 0 8px var(--accent)}50%{box-shadow:0 0 25px var(--accent),0 0 50px var(--accent)}}
+    .ltext{font-size:1.1rem;font-weight:bold;letter-spacing:4px;color:var(--text);}
+    .lsub{font-size:.58rem;color:var(--muted);letter-spacing:2px;}
+    .hdr-r{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;}
+    .ti{font-size:.68rem;color:var(--muted);}
+    .ti span{color:var(--a2);}
+    #wsStatus{font-size:.62rem;padding:.18rem .5rem;border-radius:8px;background:rgba(16,185,129,.1);border:1px solid var(--green);color:var(--green);}
+    .nav a{font-size:.68rem;color:var(--muted);text-decoration:none;padding:.25rem .5rem;border-radius:4px;border:1px solid transparent;margin-left:.4rem;transition:all .2s;}
+    .nav a:hover{color:var(--a2);border-color:var(--border);}
 
-    /* ── LAYOUT ─────────────────────────────────────────── */
-    main { display: grid; grid-template-columns: 340px 1fr 340px; grid-template-rows: auto 1fr; gap: 0; height: calc(100vh - 60px); }
+    /* MISSION */
+    #mission-bar{background:linear-gradient(90deg,rgba(99,102,241,.07),rgba(34,211,238,.04));border-bottom:1px solid rgba(99,102,241,.18);padding:.55rem 1.5rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;}
+    .ml{font-size:.6rem;color:var(--accent);text-transform:uppercase;letter-spacing:2px;white-space:nowrap;}
+    #missionText{font-size:.75rem;color:var(--a2);flex:1;}
+    .mp{display:flex;align-items:center;gap:.4rem;font-size:.62rem;color:var(--muted);}
+    .pbar{width:90px;height:4px;background:var(--border);border-radius:2px;}
+    .pfill{height:100%;background:linear-gradient(90deg,var(--accent),var(--a2));border-radius:2px;transition:width 1s;}
+    #mBroadcast{display:none;font-size:.6rem;padding:.15rem .5rem;background:rgba(245,158,11,.12);border:1px solid var(--yellow);color:var(--yellow);border-radius:4px;animation:blink .5s ease 3;}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 
-    /* ── PANELS ─────────────────────────────────────────── */
-    .panel {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-    .panel-header {
-      padding: 0.7rem 1rem;
-      border-bottom: 1px solid var(--border);
-      font-size: 0.68rem;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      color: var(--muted);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-shrink: 0;
-    }
-    .panel-header .title { color: var(--accent2); }
-    .panel-body { flex: 1; overflow-y: auto; padding: 0.8rem; }
-    .panel-body::-webkit-scrollbar { width: 3px; }
-    .panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    /* STATS */
+    .stats-bar{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:.6rem;padding:.7rem 1.5rem;border-bottom:1px solid var(--border);}
+    .sc{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:.5rem .7rem;text-align:center;}
+    .sv{font-size:1.2rem;font-weight:bold;color:var(--a2);}
+    .sl{font-size:.52rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:.15rem;}
 
-    /* ── LEFT: AGENTS ───────────────────────────────────── */
-    #leftPanel { grid-column: 1; grid-row: 1 / 3; }
-    .agent-card {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 0.9rem;
-      margin-bottom: 0.6rem;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      cursor: default;
-    }
-    .agent-card.active { border-color: var(--green); box-shadow: 0 0 12px rgba(16,185,129,0.15); }
-    .agent-card.heartbeat-active { border-color: var(--accent); }
-    .agent-card .agent-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; }
-    .agent-name { font-size: 0.82rem; font-weight: bold; color: var(--text); }
-    .agent-role { font-size: 0.65rem; color: var(--muted); margin-top: 0.1rem; }
-    .agent-balance { font-size: 1.1rem; color: var(--accent2); font-weight: bold; }
-    .agent-status-row { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.4rem; }
-    .tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-      padding: 0.15rem 0.45rem;
-      border-radius: 4px;
-      font-size: 0.6rem;
-      letter-spacing: 0.5px;
-    }
-    .tag-active { background: #052e16; color: var(--green); }
-    .tag-idle { background: #1a2030; color: var(--muted); }
-    .tag-heartbeat { background: #1e1040; color: var(--purple); animation: blink-tag 2s infinite; }
-    @keyframes blink-tag { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-    .pubkey { font-size: 0.6rem; color: var(--muted); cursor: pointer; margin-top: 0.3rem; }
-    .pubkey:hover { color: var(--accent2); }
-    .heartbeat-bar {
-      height: 3px;
-      background: var(--border);
-      border-radius: 2px;
-      margin-top: 0.5rem;
-      overflow: hidden;
-    }
-    .heartbeat-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--accent), var(--accent2));
-      border-radius: 2px;
-      transition: width 1s linear;
-    }
+    /* GRID */
+    .grid{display:grid;grid-template-columns:290px 1fr 310px;height:calc(100vh - 155px);}
+    @media(max-width:900px){.grid{grid-template-columns:1fr;height:auto;}}
 
-    /* ── CENTER TOP: STATS ──────────────────────────────── */
-    #centerTop { grid-column: 2; grid-row: 1; border-bottom: 1px solid var(--border); }
-    .stats-row { display: flex; padding: 0.8rem; gap: 0.8rem; }
-    .stat-box {
-      flex: 1;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 0.8rem;
-      text-align: center;
-    }
-    .stat-box .s-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
-    .stat-box .s-value { font-size: 1.4rem; font-weight: bold; color: var(--accent2); margin-top: 0.2rem; }
+    /* LEFT */
+    .pl{border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column;}
+    .ptitle{font-size:.58rem;text-transform:uppercase;letter-spacing:2px;color:var(--muted);padding:.65rem 1rem .4rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
 
-    /* ── CENTER MAIN: THOUGHT STREAM ────────────────────── */
-    #thoughtPanel { grid-column: 2; grid-row: 2; }
-    .thought-entry {
-      display: flex;
-      gap: 0.6rem;
-      padding: 0.45rem 0.5rem;
-      border-left: 3px solid transparent;
-      border-radius: 0 4px 4px 0;
-      margin-bottom: 2px;
-      animation: thought-in 0.3s ease;
-      font-size: 0.77rem;
-      line-height: 1.4;
-    }
-    @keyframes thought-in {
-      from { opacity: 0; transform: translateX(-8px); }
-      to { opacity: 1; transform: translateX(0); }
-    }
-    .thought-entry .t-icon { flex-shrink: 0; font-size: 0.9rem; }
-    .thought-entry .t-body { flex: 1; min-width: 0; }
-    .thought-entry .t-agent { font-size: 0.6rem; color: var(--muted); margin-bottom: 0.1rem; }
-    .thought-entry .t-msg { color: var(--text); word-break: break-word; }
-    .thought-entry .t-time { font-size: 0.6rem; color: var(--muted); flex-shrink: 0; margin-top: 0.15rem; }
+    /* Fund Vault */
+    .fv{margin:.5rem;background:linear-gradient(135deg,rgba(99,102,241,.07),rgba(34,211,238,.04));border:1px solid rgba(99,102,241,.28);border-radius:9px;padding:.9rem;}
+    .fvt{font-size:.68rem;font-weight:bold;color:var(--a2);margin-bottom:.45rem;}
+    .fva{font-size:.6rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:.35rem .5rem;cursor:pointer;word-break:break-all;margin-bottom:.45rem;color:var(--text);transition:border-color .2s;}
+    .fva:hover{border-color:var(--a2);}
+    .fvbtns{display:flex;gap:.35rem;flex-wrap:wrap;}
+    .fvb{font-size:.62rem;padding:.25rem .65rem;border-radius:4px;cursor:pointer;border:1px solid;font-family:inherit;text-decoration:none;}
+    .fvb.c{background:rgba(99,102,241,.15);color:var(--accent);border-color:var(--accent);}
+    .fvb.t{background:rgba(34,211,238,.08);color:var(--a2);border-color:var(--a2);}
+    .fvn{font-size:.58rem;color:var(--muted);margin-top:.4rem;}
 
-    /* thought colors */
-    .t-WAKE    { border-color: #6366f1; background: rgba(99,102,241,0.05); }
-    .t-READ    { border-color: #a78bfa; background: rgba(167,139,250,0.04); }
-    .t-THINK   { border-color: #f59e0b; background: rgba(245,158,11,0.05); }
-    .t-PLAN    { border-color: #22d3ee; background: rgba(34,211,238,0.05); }
-    .t-EXECUTE { border-color: #10b981; background: rgba(16,185,129,0.07); }
-    .t-OBSERVE { border-color: #4a6080; background: transparent; }
-    .t-ALERT   { border-color: #ef4444; background: rgba(239,68,68,0.08); }
-    .t-SLEEP   { border-color: #1e2d40; background: transparent; opacity: 0.5; }
-    .t-ERROR   { border-color: #ef4444; background: rgba(239,68,68,0.1); }
-    .t-SUCCESS { border-color: #10b981; background: rgba(16,185,129,0.08); }
+    /* Agent cards */
+    .al{overflow-y:auto;padding:.5rem;}
+    .ac{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:.65rem;margin-bottom:.45rem;transition:border-color .3s;}
+    .ac.active{border-color:rgba(99,102,241,.35);}
+    .ac.hb{border-color:rgba(16,185,129,.28);}
+    .ac.vault-card{border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.02);}
+    .ac.sacked{opacity:.35;pointer-events:none;border-color:var(--red);}
+    .atop{display:flex;justify-content:space-between;margin-bottom:.35rem;}
+    .an{font-size:.75rem;font-weight:bold;}
+    .ar{font-size:.56rem;color:var(--muted);}
+    .ab{font-size:.72rem;color:var(--green);text-align:right;}
+    .tags{display:flex;gap:.25rem;flex-wrap:wrap;margin-bottom:.4rem;}
+    .tag{font-size:.52rem;padding:.08rem .35rem;border-radius:3px;}
+    .tag-on{background:rgba(16,185,129,.12);color:var(--green);border:1px solid rgba(16,185,129,.25);}
+    .tag-off{background:rgba(74,96,128,.12);color:var(--muted);border:1px solid var(--border);}
+    .tag-hb{background:rgba(99,102,241,.12);color:var(--accent);border:1px solid rgba(99,102,241,.25);}
+    .tag-v{background:rgba(245,158,11,.12);color:var(--yellow);border:1px solid rgba(245,158,11,.25);}
+    .tag-p{background:rgba(167,139,250,.12);color:var(--purple);border:1px solid rgba(167,139,250,.25);}
+    .abts{display:flex;gap:.25rem;flex-wrap:wrap;margin-top:.4rem;}
+    .abt{font-size:.56rem;padding:.18rem .45rem;border-radius:4px;cursor:pointer;border:1px solid;font-family:inherit;transition:all .15s;}
+    .bt-a{background:rgba(16,185,129,.08);color:var(--green);border-color:var(--green);}
+    .bt-s{background:rgba(99,102,241,.08);color:var(--accent);border-color:var(--accent);}
+    .bt-k{background:rgba(239,68,68,.08);color:var(--red);border-color:var(--red);}
+    .bt-r{background:rgba(245,158,11,.08);color:var(--yellow);border-color:var(--yellow);}
+    .bt-e{font-size:.56rem;padding:.18rem .45rem;border-radius:4px;border:1px solid rgba(34,211,238,.3);color:var(--a2);text-decoration:none;}
+    .pk{font-size:.56rem;color:var(--muted);cursor:pointer;margin-top:.28rem;}
+    .pk:hover{color:var(--a2);}
+    .hbbar{height:2px;background:var(--border);border-radius:2px;margin-top:.35rem;overflow:hidden;}
+    .hbfill{height:100%;background:linear-gradient(90deg,var(--green),var(--a2));border-radius:2px;animation:hbs 45s linear infinite;}
+    @keyframes hbs{0%{width:0}100%{width:100%}}
 
-    /* ── RIGHT: COMMAND CENTER ──────────────────────────── */
-    #rightPanel { grid-column: 3; grid-row: 1 / 3; }
-    .quick-btns { display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--border); }
-    .qbtn {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 0.3rem 0.6rem;
-      border-radius: 5px;
-      font-size: 0.65rem;
-      font-family: monospace;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .qbtn:hover { border-color: var(--accent); color: var(--accent); }
-    .ai-response {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 0.8rem;
-      font-size: 0.78rem;
-      line-height: 1.6;
-      color: var(--accent2);
-      min-height: 80px;
-      margin: 0.6rem 0.8rem;
-      white-space: pre-wrap;
-    }
-    .cmd-area { padding: 0 0.8rem 0.8rem; display: flex; flex-direction: column; gap: 0.5rem; }
-    .cmd-input {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 0.6rem 0.8rem;
-      border-radius: 6px;
-      font-family: 'Courier New', monospace;
-      font-size: 0.78rem;
-      resize: none;
-      outline: none;
-      height: 70px;
-    }
-    .cmd-input:focus { border-color: var(--accent); }
-    .cmd-btn {
-      background: linear-gradient(135deg, var(--accent), #8b5cf6);
-      border: none;
-      color: white;
-      padding: 0.65rem;
-      border-radius: 6px;
-      font-size: 0.78rem;
-      font-family: monospace;
-      letter-spacing: 1px;
-      cursor: pointer;
-      transition: opacity 0.2s;
-    }
-    .cmd-btn:hover { opacity: 0.85; }
-    .cmd-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    /* Governor status */
+    .gov-card{margin:.5rem;background:rgba(167,139,250,.04);border:1px solid rgba(167,139,250,.22);border-radius:7px;padding:.75rem;flex-shrink:0;}
+    .gct{font-size:.6rem;color:var(--purple);text-transform:uppercase;letter-spacing:1px;margin-bottom:.5rem;display:flex;justify-content:space-between;}
+    .gr{display:flex;justify-content:space-between;font-size:.62rem;margin-bottom:.28rem;}
+    .gk{color:var(--muted);}
+    .gv{color:var(--text);}
+    .gv.bl{color:var(--red);}
+    .gv.ok{color:var(--green);}
 
-    /* activity log at bottom of right */
-    .mini-log { flex: 1; overflow-y: auto; padding: 0.5rem 0.8rem; }
-    .mini-log-entry {
-      font-size: 0.68rem;
-      padding: 0.25rem 0;
-      border-bottom: 1px solid #0d1520;
-      color: var(--muted);
-      line-height: 1.3;
-    }
-    .mini-log-entry span { color: var(--text); }
+    /* CENTER */
+    .pc{display:flex;flex-direction:column;border-right:1px solid var(--border);}
+    #ts{flex:1;overflow-y:auto;padding:.5rem;}
+    .te{display:flex;gap:.45rem;padding:.28rem .35rem;border-radius:4px;margin-bottom:.18rem;animation:si .3s ease;font-size:.7rem;}
+    @keyframes si{from{opacity:0;transform:translateY(3px)}to{opacity:1}}
+    .ti2{width:16px;flex-shrink:0;text-align:center;}
+    .tb{flex:1;min-width:0;}
+    .tag-a{font-size:.56rem;font-weight:bold;margin-bottom:.08rem;}
+    .tm{color:#b0c8e8;word-break:break-word;line-height:1.4;}
+    .tt{font-size:.52rem;color:var(--muted);white-space:nowrap;align-self:flex-start;margin-top:.1rem;}
+    .te.t-WAKE{background:rgba(99,102,241,.05);}
+    .te.t-THINK{background:rgba(245,158,11,.04);}
+    .te.t-EXECUTE,.te.t-SUCCESS{background:rgba(16,185,129,.05);}
+    .te.t-ALERT,.te.t-ERROR{background:rgba(239,68,68,.05);}
+    .te.t-PLAN{background:rgba(34,211,238,.03);}
+    .te.t-SLEEP{background:rgba(74,96,128,.04);}
+    .tcontrols{padding:.4rem .5rem;border-top:1px solid var(--border);display:flex;gap:.35rem;align-items:center;flex-shrink:0;}
+    .tcontrols button{font-size:.58rem;padding:.18rem .5rem;border-radius:4px;cursor:pointer;background:var(--s2);border:1px solid var(--border);color:var(--muted);font-family:inherit;}
+    .tcontrols button:hover{color:var(--text);}
 
-    /* ── HEARTBEAT TICKER ───────────────────────────────── */
-    .hb-ticker {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: var(--surface);
-      border-top: 1px solid var(--border);
-      padding: 0.3rem 1rem;
-      font-size: 0.65rem;
-      color: var(--muted);
-      display: flex;
-      gap: 2rem;
-      overflow: hidden;
-    }
-    .hb-ticker span { color: var(--accent2); }
+    /* RIGHT */
+    .pr{overflow-y:auto;display:flex;flex-direction:column;}
+    .cmd-hdr{padding:.55rem 1rem;border-bottom:1px solid var(--border);font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:2px;display:flex;justify-content:space-between;flex-shrink:0;}
+    .qcmds{padding:.45rem;display:flex;flex-wrap:wrap;gap:.28rem;}
+    .qc{font-size:.58rem;padding:.22rem .45rem;background:var(--s2);border:1px solid var(--border);border-radius:4px;cursor:pointer;color:var(--muted);font-family:inherit;transition:all .15s;text-align:left;}
+    .qc:hover{border-color:var(--accent);color:var(--a2);}
+    .ci{padding:.45rem;}
+    #ci{width:100%;background:var(--s2);border:1px solid var(--border);color:var(--text);padding:.45rem;border-radius:5px;font-size:.7rem;font-family:inherit;resize:none;outline:none;height:56px;}
+    #ci:focus{border-color:var(--accent);}
+    #cb{width:100%;margin-top:.35rem;background:linear-gradient(135deg,var(--accent),#7c3aed);color:#fff;border:none;padding:.5rem;border-radius:5px;font-size:.72rem;cursor:pointer;font-family:inherit;}
+    #cb:disabled{opacity:.45;}
+    .air{margin:.45rem;padding:.55rem;background:rgba(99,102,241,.05);border:1px solid rgba(99,102,241,.18);border-radius:5px;font-size:.67rem;color:var(--a2);min-height:48px;line-height:1.5;}
 
-    @media (max-width: 1100px) {
-      main { grid-template-columns: 1fr 1fr; }
-      #leftPanel { grid-column: 1; grid-row: 1; }
-      #centerTop { grid-column: 2; grid-row: 1; }
-      #thoughtPanel { grid-column: 1 / 3; grid-row: 2; }
-      #rightPanel { grid-column: 1 / 3; grid-row: 3; height: 400px; }
-    }
+    /* Simulate */
+    .sim-btn{margin:.45rem;background:linear-gradient(135deg,#059669,#0891b2);color:#fff;border:none;padding:.55rem;border-radius:5px;font-size:.7rem;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:.4rem;}
+    .sim-btn:disabled{opacity:.45;}
+
+    /* TX Log */
+    .txs{flex:1;display:flex;flex-direction:column;border-top:1px solid var(--border);min-height:160px;}
+    #txlog{flex:1;overflow-y:auto;padding:.35rem;}
+    .txe{font-size:.61rem;padding:.3rem .45rem;border-bottom:1px solid rgba(26,45,70,.4);display:flex;gap:.4rem;}
+    .txe:last-child{border-bottom:none;}
+    .txt{color:var(--muted);white-space:nowrap;flex-shrink:0;font-size:.54rem;}
+    .txm{color:var(--text);line-height:1.4;word-break:break-word;}
+    .txm a{color:var(--a2);text-decoration:none;}
+    .txe.SWAP{border-left:2px solid var(--green);}
+    .txe.BLOCK{border-left:2px solid var(--red);}
+    .txe.TRANSFER{border-left:2px solid var(--accent);}
+    .txe.OFFRAMP{border-left:2px solid var(--yellow);}
+    .txe.RUG{border-left:2px solid var(--red);}
+    .txe.HALT{border-left:2px solid var(--purple);}
+    .txe.RECALL{border-left:2px solid var(--yellow);}
+    .txe.MISSION{border-left:2px solid var(--a2);}
+    .txe.CREATE{border-left:2px solid var(--muted);}
+    .txe.SACK{border-left:2px solid var(--red);}
+
+    /* Overlay */
+    .ov{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;z-index:1000;}
+    .ov.show{display:flex;}
+    .ovc{background:var(--surface);border:1px solid var(--red);border-radius:10px;padding:1.4rem;max-width:300px;width:90%;text-align:center;}
+    .ovt{font-size:.95rem;font-weight:bold;color:var(--red);margin-bottom:.5rem;}
+    .ovs{font-size:.75rem;color:var(--muted);margin-bottom:.9rem;line-height:1.5;}
+    .ovbts{display:flex;gap:.5rem;justify-content:center;}
+    .ovbts button{padding:.45rem 1.1rem;border-radius:5px;font-size:.75rem;cursor:pointer;font-family:inherit;}
+
+    /* mission notify */
+    .mn{position:fixed;top:75px;right:1rem;background:rgba(245,158,11,.13);border:1px solid var(--yellow);padding:.55rem .9rem;border-radius:7px;font-size:.72rem;color:var(--yellow);z-index:200;animation:si .3s ease;display:none;}
+
+    ::-webkit-scrollbar{width:3px;height:3px}
+    ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+    @keyframes recall-glow{0%,100%{box-shadow:0 0 0 transparent}50%{box-shadow:0 0 12px rgba(245,158,11,.5)}}
+    .recalling{animation:recall-glow 1s ease 3;}
   </style>
 </head>
 <body>
 
-<header>
-  <div class="logo">
-    <div class="logo-pulse"></div>
-    <div>
-      <div class="logo-text">PULSE</div>
-      <div class="logo-sub">AGENTIC WALLET OS · SOLANA</div>
+<div class="mn" id="mn"></div>
+<div class="ov" id="sackOv">
+  <div class="ovc">
+    <div class="ovt">⚠️ Sack Agent?</div>
+    <div class="ovs" id="sackMsg">This agent will be removed. Funds recalled to vault first.</div>
+    <div class="ovbts">
+      <button onclick="cancelSack()" style="background:var(--s2);border:1px solid var(--border);color:var(--muted)">Cancel</button>
+      <button onclick="confirmSack()" style="background:rgba(239,68,68,.18);border:1px solid var(--red);color:var(--red)">Confirm Sack</button>
     </div>
   </div>
-  <div class="header-right">
-    <span class="badge badge-devnet">DEVNET</span>
-    <span class="badge badge-live" id="wsStatus">● CONNECTING</span>
-    <span style="font-size:0.7rem;color:var(--muted)">Cycle <span id="cycleNum" style="color:var(--accent2)">—</span></span>
+</div>
+
+<header>
+  <a href="/" class="logo"><div class="pdot"></div><div><div class="ltext">PULSE</div><div class="lsub">AGENTIC WALLET OS</div></div></a>
+  <div class="hdr-r">
+    <div class="ti">SOL <span id="tSol">$—</span></div>
+    <div class="ti">Cycle <span id="tCycle">—</span></div>
+    <div class="ti">Network <span id="tNet" style="color:var(--yellow)">devnet</span></div>
+    <div id="wsStatus">● CONNECTING</div>
+    <div class="nav">
+      <a href="/">Home</a>
+      <a href="metrics.html">Metrics</a>
+      <a href="docs.html">Docs</a>
+    </div>
   </div>
 </header>
 
-<main>
-  <!-- LEFT: AGENT WALLETS -->
-  <div class="panel" id="leftPanel">
-    <div class="panel-header">
-      <span class="title">Agent Wallets</span>
-      <span id="agentCountBadge" style="color:var(--accent2)">—</span>
-    </div>
-    <div class="panel-body" id="agentList">
-      <div style="color:var(--muted);font-size:0.75rem;padding:1rem;">Initializing swarm...</div>
-    </div>
+<!-- MISSION BAR -->
+<div id="mission-bar">
+  <div class="ml">🎯 Active Mission</div>
+  <div id="missionText">Loading mission directive...</div>
+  <div class="mp">
+    <span id="mPct">0%</span>
+    <div class="pbar"><div class="pfill" id="mFill" style="width:0%"></div></div>
+    <span id="mCycles">—</span>
   </div>
+  <div id="mBroadcast">📡 Broadcast</div>
+</div>
 
-  <!-- CENTER TOP: STATS -->
-  <div class="panel" id="centerTop">
-    <div class="stats-row">
-      <div class="stat-box">
-        <div class="s-label">Portfolio (SOL)</div>
-        <div class="s-value" id="statSOL">—</div>
+<!-- STATS -->
+<div class="stats-bar">
+  <div class="sc"><div class="sv" id="sSOL">—</div><div class="sl">Total SOL</div></div>
+  <div class="sc"><div class="sv" id="sAgents">—</div><div class="sl">Agents</div></div>
+  <div class="sc"><div class="sv" id="sBeats" style="color:var(--green)">0</div><div class="sl">Heartbeats</div></div>
+  <div class="sc"><div class="sv" id="sTrades" style="color:var(--green)">0</div><div class="sl">Trades</div></div>
+  <div class="sc"><div class="sv" id="sBlocked" style="color:var(--red)">0</div><div class="sl">Gov Blocked</div></div>
+  <div class="sc"><div class="sv" id="sRugs" style="color:var(--red)">0</div><div class="sl">Rugs Stopped</div></div>
+  <div class="sc"><div class="sv" id="sHalts" style="color:var(--purple)">0</div><div class="sl">Risk Halts</div></div>
+  <div class="sc"><div class="sv" id="sThoughts">0</div><div class="sl">Thoughts</div></div>
+</div>
+
+<div class="grid">
+
+  <!-- LEFT: AGENTS -->
+  <div class="pl">
+    <div class="ptitle"><span>Agent Swarm</span><span id="aBadge" style="color:var(--a2)">—</span></div>
+
+    <!-- Fund Vault -->
+    <div class="fv">
+      <div class="fvt">💰 Fund Your Vault</div>
+      <div class="fva" id="vAddr" onclick="copyVault()">Fetching vault address...</div>
+      <div class="fvbtns">
+        <button class="fvb c" onclick="copyVault()">📋 Copy</button>
+        <a class="fvb t" href="https://t.me/clicksolbot" target="_blank">🤖 Buy SOL via Clickbot</a>
       </div>
-      <div class="stat-box">
-        <div class="s-label">Active Agents</div>
-        <div class="s-value" id="statActive">—</div>
-      </div>
-      <div class="stat-box">
-        <div class="s-label">Heartbeats</div>
-        <div class="s-value" id="statBeats" style="color:var(--purple)">0</div>
-      </div>
-      <div class="stat-box">
-        <div class="s-label">Thoughts</div>
-        <div class="s-value" id="statThoughts" style="color:var(--yellow)">0</div>
-      </div>
+      <div class="fvn">Fund this address → orchestrator auto-distributes to all agents</div>
+    </div>
+
+    <div class="al" id="agentList">
+      <div style="color:var(--muted);font-size:.7rem;padding:1rem;text-align:center">Initializing swarm...</div>
+    </div>
+
+    <!-- Governor -->
+    <div class="gov-card">
+      <div class="gct"><span>🛡️ Governor Status</span><span class="tag tag-p">PERMISSIONED BRAIN</span></div>
+      <div class="gr"><span class="gk">Daily Limit</span><span class="gv" id="gLimit">2.0 SOL</span></div>
+      <div class="gr"><span class="gk">Spent Today</span><span class="gv" id="gSpent">0.000</span></div>
+      <div class="gr"><span class="gk">Remaining</span><span class="gv ok" id="gRem">2.000 SOL</span></div>
+      <div class="gr"><span class="gk">Blocked Today</span><span class="gv bl" id="gBlocked">0</span></div>
+      <div class="gr"><span class="gk">Approval Rate</span><span class="gv ok" id="gApproval">—</span></div>
     </div>
   </div>
 
   <!-- CENTER: THOUGHT STREAM -->
-  <div class="panel" id="thoughtPanel">
-    <div class="panel-header">
-      <span class="title">🧠 Agent Thought Stream — Internal Monologue</span>
-      <button onclick="clearThoughts()" style="background:none;border:1px solid var(--border);color:var(--muted);padding:0.15rem 0.5rem;border-radius:4px;font-size:0.65rem;cursor:pointer;">Clear</button>
+  <div class="pc">
+    <div class="ptitle"><span>⚡ Live Thought Stream</span><span style="color:var(--green);font-size:.58rem" id="streamLbl">● live</span></div>
+    <div id="ts">
+      <div style="color:var(--muted);font-size:.7rem;padding:2rem;text-align:center" data-ph>
+        Connecting to agent consciousness...<br/><span style="font-size:.6rem">Thoughts stream here in real-time via WebSocket</span>
+      </div>
     </div>
-    <div class="panel-body" id="thoughtStream">
-      <div style="color:var(--muted);font-size:0.75rem;padding:1rem;">Waiting for agent thoughts...</div>
-    </div>
-  </div>
-
-  <!-- RIGHT: COMMAND CENTER + LOG -->
-  <div class="panel" id="rightPanel">
-    <div class="panel-header"><span class="title">🤖 AI Command Center</span></div>
-
-    <div class="quick-btns">
-      <button class="qbtn" onclick="cmd('What is the portfolio status right now?')">📊 Status</button>
-      <button class="qbtn" onclick="cmd('Start DCA on BONK using dca_agent_01 with 0.01 SOL every 5 minutes')">▶ Start DCA</button>
-      <button class="qbtn" onclick="cmd('Stop all DCA strategies immediately')">⏹ Stop DCA</button>
-      <button class="qbtn" onclick="cmd('Set a 7% trailing stop on all active positions')">🛡 Trail Stop</button>
-      <button class="qbtn" onclick="cmd('Run rug check on all held positions')">🔍 Rug Check</button>
-      <button class="qbtn" onclick="cmd('Emmanuel wants to grow his SOL by 5% this week. Manage it autonomously.')">🎯 Grow 5%</button>
-    </div>
-
-    <div class="ai-response" id="aiResponse">Ask the orchestrator anything in natural language...</div>
-
-    <div class="cmd-area">
-      <textarea class="cmd-input" id="cmdInput" placeholder='e.g. "Emmanuel wants to grow his SOL by 5% this week. Manage it."'></textarea>
-      <button class="cmd-btn" id="cmdBtn" onclick="sendCmd()">⚡ SEND TO ORCHESTRATOR</button>
-    </div>
-
-    <div class="panel-header" style="border-top:1px solid var(--border);">
-      <span class="title">📡 Transaction Log</span>
-    </div>
-    <div class="mini-log" id="miniLog">
-      <div class="mini-log-entry">Waiting for transactions...</div>
+    <div class="tcontrols">
+      <button onclick="clearThoughts()">Clear</button>
+      <button onclick="setFilter('')" style="color:var(--a2)">All</button>
+      <button onclick="setFilter('orchestrator_main')">Orch</button>
+      <button onclick="setFilter('dca_agent_01')">DCA</button>
+      <button onclick="setFilter('risk_manager_01')">Risk</button>
+      <span style="margin-left:auto;font-size:.58rem;color:var(--muted)" id="tcount">0 thoughts</span>
     </div>
   </div>
-</main>
 
-<div class="hb-ticker" id="ticker">
-  <div>PULSE · SOLANA DEVNET</div>
-  <div>SOL Price: <span id="tickerSol">—</span></div>
-  <div>Last Action: <span id="tickerAction">—</span></div>
-  <div>WebSocket: <span id="tickerWS">Connecting...</span></div>
+  <!-- RIGHT: COMMAND + LOG -->
+  <div class="pr">
+    <div class="cmd-hdr"><span>🧠 Command Centre</span><span style="color:var(--a2)">→ Orchestrator AI</span></div>
+    <div class="qcmds">
+      <button class="qc" onclick="cmd('Portfolio status and current P&L')">📊 Status</button>
+      <button class="qc" onclick="cmd('Change mission: maximize BONK position this week aggressively')">🎯 Mission: BONK</button>
+      <button class="qc" onclick="cmd('Change mission: conservative mode — protect capital, stop new buys, hold positions')">🛡️ Mission: Protect</button>
+      <button class="qc" onclick="cmd('Distribute working capital from vault to all active agents proportionally')">💸 Distribute Capital</button>
+      <button class="qc" onclick="cmd('Activate all sleeping agents and start their heartbeats now')">⚡ Wake All Agents</button>
+      <button class="qc" onclick="cmd('Run emergency rug check on all current positions and report findings')">🚨 Rug Check All</button>
+      <button class="qc" onclick="cmd('What is the governor daily spending limit and how much is remaining?')">🛡️ Gov Status</button>
+      <button class="qc" onclick="cmd('Sweep any profit above 10% to cold wallet now via off-ramper')">💰 Off-Ramp</button>
+    </div>
+    <div class="ci">
+      <textarea id="ci" placeholder="Tell the orchestrator anything...&#10;'Change mission to...', 'Recall funds from...', 'Status report'"></textarea>
+      <button id="cb" onclick="sendCmd()">⚡ Send to Orchestrator</button>
+    </div>
+    <div class="air" id="air">Orchestrator standing by. Issue a command above.</div>
+
+    <!-- Simulate Demo -->
+    <button class="sim-btn" id="simBtn" onclick="runSim()">🎬 Run Full Demo Simulation</button>
+
+    <!-- TX Log -->
+    <div class="txs">
+      <div class="ptitle"><span>📋 Transaction Log</span><span id="txCnt" style="color:var(--muted);font-size:.58rem">0 events</span></div>
+      <div id="txlog"><div style="color:var(--muted);font-size:.62rem;padding:1rem;text-align:center">Swaps, blocks, recalls, rugs, off-ramps appear here</div></div>
+    </div>
+  </div>
 </div>
 
 <script>
-  // ── STATE ──────────────────────────────────────────────────────────────────
-  let ws = null;
-  let totalThoughts = 0;
-  let totalBeats = 0;
-  const THOUGHT_ICONS = {
-    WAKE: '⏰', READ: '📖', THINK: '🤔', PLAN: '📋',
-    EXECUTE: '⚡', OBSERVE: '👁', ALERT: '🚨', SLEEP: '💤',
-    ERROR: '❌', SUCCESS: '✅'
-  };
+  // STATE
+  let ws, tTotal=0,beats=0,trades=0,blocked=0,rugs=0,halts=0,txCnt=0,filter='';
+  let pendingSack=null, mCycles=0, mTotal=20, gSpent=0, gBlocked=0;
+  const ICONS={WAKE:'⏰',READ:'📖',THINK:'🤔',PLAN:'📋',EXECUTE:'⚡',OBSERVE:'👁️',ALERT:'🚨',SLEEP:'💤',ERROR:'❌',SUCCESS:'✅',MISSION:'📡'};
+  const PROTECTED=['orchestrator_main','risk_manager_01'];
 
-  // ── WebSocket ──────────────────────────────────────────────────────────────
-  function connectWS() {
-    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    ws = new WebSocket(`${proto}//${location.host}`);
-
-    ws.onopen = () => {
-      document.getElementById('wsStatus').textContent = '● LIVE';
-      document.getElementById('wsStatus').style.color = '#10b981';
-      document.getElementById('tickerWS').textContent = 'Connected';
-      addThought({ type: 'SUCCESS', agentId: 'dashboard', message: 'Connected to Pulse WebSocket. Watching the swarm...', timestamp: new Date().toISOString() });
+  // WS
+  function connectWS(){
+    const p=location.protocol==='https:'?'wss:':'ws:';
+    ws=new WebSocket(`${p}//${location.host}`);
+    ws.onopen=()=>{
+      set('wsStatus','● LIVE','var(--green)');
+      set('streamLbl','● live','var(--green)');
+      addTx('CREATE','🔗 Connected to Pulse WebSocket — monitoring all agents');
     };
-
-    ws.onclose = () => {
-      document.getElementById('wsStatus').textContent = '● OFFLINE';
-      document.getElementById('wsStatus').style.color = '#ef4444';
-      document.getElementById('tickerWS').textContent = 'Reconnecting...';
-      setTimeout(connectWS, 3000);
-    };
-
-    ws.onmessage = e => {
-      try { handleMsg(JSON.parse(e.data)); }
-      catch(err) { console.error('WS parse error', err); }
-    };
+    ws.onclose=()=>{ set('wsStatus','● OFFLINE','var(--red)'); setTimeout(connectWS,3000); };
+    ws.onmessage=e=>{ try{handle(JSON.parse(e.data));}catch(x){} };
   }
 
-  function handleMsg(msg) {
-    const { type, data } = msg;
-    switch(type) {
-      case 'thought':
-        addThought(data);
-        totalThoughts++;
-        document.getElementById('statThoughts').textContent = totalThoughts;
-        break;
-      case 'portfolio_snapshot':
-      case 'portfolio_update':
-        updatePortfolio(data);
-        break;
+  function handle(msg){
+    const{type,data}=msg;
+    switch(type){
+      case 'thought': addThought(data); inc('sThoughts',++tTotal); document.getElementById('tcount').textContent=tTotal+' thoughts'; break;
+      case 'portfolio_snapshot': case 'portfolio_update': updatePort(data); break;
       case 'swarm_initialized':
-        addThought({ type: 'SUCCESS', agentId: 'system', message: `✅ ${data.message} — ${data.agentCount} agents online!`, timestamp: new Date().toISOString() });
-        refreshPortfolio();
-        break;
+        addThought({type:'SUCCESS',agentId:'system',message:`✅ ${data.message} — ${data.agentCount} agents online`,timestamp:new Date().toISOString()});
+        addTx('CREATE',`🚀 Swarm live — ${data.agentCount} agents initialized`);
+        refreshAll(); break;
       case 'heartbeat_cycle':
-        totalBeats++;
-        document.getElementById('statBeats').textContent = totalBeats;
-        document.getElementById('cycleNum').textContent = data.cycleNumber;
-        break;
+        inc('sBeats',++beats);
+        if(data.cycleNumber) document.getElementById('tCycle').textContent=data.cycleNumber;
+        stepMission(); break;
       case 'dca_execution':
-        addLog(`💰 DCA Round ${data.execution?.round} | ${data.execution?.amountAcquired} tokens acquired | <a href="https://explorer.solana.com/tx/${data.execution?.signature}?cluster=devnet" target="_blank" style="color:var(--accent2)">${shortenTx(data.execution?.signature)}</a>`);
-        refreshPortfolio();
-        break;
+        inc('sTrades',++trades);
+        const s=data.execution?.signature;
+        addTx('SWAP',`💰 DCA | ${data.execution?.amountAcquired||'?'} tokens | ${s?`<a href="https://explorer.solana.com/tx/${s}?cluster=devnet" target="_blank">${s.slice(0,10)}...</a>`:''}`);
+        refreshAll(); break;
+      case 'governor_block':
+        inc('sBlocked',++blocked); inc('gBlocked',++gBlocked);
+        addTx('BLOCK',`🛡️ BLOCKED — ${data.reason||'rule violation'} | ${data.agentId||'?'}`); break;
       case 'stop_triggered':
-        addLog(`🚨 STOP TRIGGERED | P&L: ${data.profitLossPct?.toFixed(2)}% | ${shortenTx(data.signature)}`);
-        break;
-      case 'emergency_exit_required':
-        addLog(`🚨🚨 EMERGENCY EXIT REQUIRED — Rug detected!`);
-        break;
+        addTx('SWAP',`📉 Stop Triggered | P&L: ${data.profitLossPct?.toFixed(2)||'?'}% | ${data.signature?.slice(0,10)||''}...`);
+        refreshAll(); break;
+      case 'rug_blocked': case 'emergency_exit_required':
+        inc('sRugs',++rugs);
+        addTx('RUG',`🚨 RUG BLOCKED — ${data.token||data.mint||'suspicious token'} | Score: ${data.score||'900+'}/1000`); break;
+      case 'risk_halt':
+        inc('sHalts',++halts);
+        addTx('HALT',`⛔ Risk Manager HALTED ${data.agentId||'?'} — ${data.reason||'high risk detected'}`); break;
       case 'offramp_executed':
-        addLog(`💸 OFF-RAMP: ${data.amountSwept?.toFixed(4)} SOL swept to cold wallet | ${shortenTx(data.signature)}`);
-        break;
+        addTx('OFFRAMP',`💸 Off-Ramp | ${data.amountSwept?.toFixed(4)||'?'} SOL → cold wallet | ${data.signature?.slice(0,10)||'demo'}...`); break;
+      case 'governor_recall':
+        addTx('RECALL',`↩ Recalled ${data.amount?.toFixed(4)||'?'} SOL from ${data.agentId} → vault`); refreshAll(); break;
+      case 'capital_distributed':
+        addTx('TRANSFER',`💸 Capital Distributed: ${data.totalSOL?.toFixed(4)||'?'} SOL across ${data.agentCount||'?'} agents`); refreshAll(); break;
+      case 'agent_sacked':
+        addTx('SACK',`🔴 SACKED: ${data.agentId}${data.recalledSOL?` | ${data.recalledSOL.toFixed(4)} SOL recalled to vault`:''}`); refreshAll(); break;
+      case 'mission_changed':
+        const m=data.mission||data;
+        setMissionText(m); showNotify(`📡 Mission updated: "${String(m).slice(0,50)}..."`);
+        addTx('MISSION',`📡 Mission → "${String(m).slice(0,60)}"`);
+        const mb=document.getElementById('mBroadcast');
+        mb.style.display='inline-block'; setTimeout(()=>mb.style.display='none',4000); break;
       case 'command_result':
-        document.getElementById('aiResponse').textContent = data.response;
-        document.getElementById('cmdBtn').disabled = false;
-        document.getElementById('tickerAction').textContent = data.command?.slice(0, 40) + '...';
-        refreshPortfolio();
-        break;
+        document.getElementById('air').textContent=data.response||'—';
+        document.getElementById('cb').disabled=false; refreshAll(); break;
       case 'agent_registered':
-        addLog(`📡 Agent online: ${data.agentId} (${data.role})`);
-        refreshPortfolio();
-        break;
+        addTx('CREATE',`📡 Agent online: ${data.agentId} (${data.role})`); refreshAll(); break;
     }
   }
 
-  // ── THOUGHT STREAM ─────────────────────────────────────────────────────────
-  function addThought(thought) {
-    const stream = document.getElementById('thoughtStream');
+  // THOUGHTS
+  function addThought(t){
+    if(filter&&t.agentId!==filter) return;
+    const s=document.getElementById('ts');
+    if(s.querySelector('[data-ph]')) s.innerHTML='';
+    const el=document.createElement('div');
+    el.className=`te t-${t.type||'OBSERVE'}`;
+    const tm=new Date(t.timestamp||Date.now()).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    el.innerHTML=`<div class="ti2">${ICONS[t.type]||'·'}</div><div class="tb"><div class="tag-a">${t.agentId}</div><div class="tm">${esc(t.message)}</div></div><div class="tt">${tm}</div>`;
+    s.appendChild(el); s.scrollTop=s.scrollHeight;
+    if(s.children.length>400) s.removeChild(s.firstChild);
+  }
+  function clearThoughts(){document.getElementById('ts').innerHTML=''; tTotal=0; set('sThoughts','0'); document.getElementById('tcount').textContent='0 thoughts';}
+  function setFilter(id){filter=id; clearThoughts();}
 
-    // Clear placeholder
-    if (stream.querySelector('[data-placeholder]')) stream.innerHTML = '';
-
-    const el = document.createElement('div');
-    el.className = `thought-entry t-${thought.type || 'OBSERVE'}`;
-
-    const time = new Date(thought.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    const icon = THOUGHT_ICONS[thought.type] || '·';
-
-    el.innerHTML = `
-      <div class="t-icon">${icon}</div>
-      <div class="t-body">
-        <div class="t-agent">${thought.agentId}</div>
-        <div class="t-msg">${escHtml(thought.message)}</div>
-      </div>
-      <div class="t-time">${time}</div>
-    `;
-
-    stream.appendChild(el);
-    stream.scrollTop = stream.scrollHeight;
-
-    // Cap at 300 thoughts
-    if (stream.children.length > 300) stream.removeChild(stream.firstChild);
+  // TX LOG
+  function addTx(type,msg){
+    const log=document.getElementById('txlog');
+    if(log.firstChild?.style?.textAlign==='center') log.innerHTML='';
+    txCnt++; document.getElementById('txCnt').textContent=txCnt+' events';
+    const el=document.createElement('div');
+    el.className=`txe ${type}`;
+    const tm=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    el.innerHTML=`<div class="txt">${tm}</div><div class="txm">${msg}</div>`;
+    log.appendChild(el); log.scrollTop=log.scrollHeight;
+    if(log.children.length>200) log.removeChild(log.firstChild);
   }
 
-  function clearThoughts() {
-    document.getElementById('thoughtStream').innerHTML = '';
-    totalThoughts = 0;
-    document.getElementById('statThoughts').textContent = '0';
+  // PORTFOLIO
+  async function refreshAll(){ refreshPort(); refreshMission(); refreshGov(); refreshVault(); }
+
+  async function refreshPort(){
+    try{
+      const d=await(await fetch('/api/portfolio')).json();
+      document.getElementById('sSOL').textContent=(d.totalPortfolioSOL||0).toFixed(4);
+      document.getElementById('sAgents').textContent=d.agentCount||0;
+      document.getElementById('aBadge').textContent=(d.agentCount||0)+' agents';
+      if(d.agents?.length) renderAgents(d.agents);
+    }catch(e){}
   }
 
-  // ── PORTFOLIO ──────────────────────────────────────────────────────────────
-  async function refreshPortfolio() {
-    try {
-      const res = await fetch('/api/portfolio');
-      const data = await res.json();
-      updatePortfolio(data);
-    } catch(e) {}
-  }
-
-  function updatePortfolio(data) {
-    document.getElementById('statSOL').textContent = data.totalPortfolioSOL?.toFixed(4) || '—';
-    document.getElementById('statActive').textContent = data.activeAgents ?? '—';
-    document.getElementById('agentCountBadge').textContent = (data.agentCount || 0) + ' agents';
-
-    if (!data.agents?.length) return;
-
-    const list = document.getElementById('agentList');
-    list.innerHTML = data.agents.map(a => {
-      const isActive = a.active;
-      const hasHB = a.heartbeatActive;
-      return `
-        <div class="agent-card ${isActive ? 'active' : ''} ${hasHB ? 'heartbeat-active' : ''}">
-          <div class="agent-top">
-            <div>
-              <div class="agent-name">${a.agentId}</div>
-              <div class="agent-role">${a.role}</div>
-            </div>
-            <div class="agent-balance">${(a.balance || 0).toFixed(5)}<br><span style="font-size:0.6rem;color:var(--muted)">SOL</span></div>
-          </div>
-          <div class="agent-status-row">
-            <span class="tag ${isActive ? 'tag-active' : 'tag-idle'}">${isActive ? '● ACTIVE' : '○ IDLE'}</span>
-            ${hasHB ? '<span class="tag tag-heartbeat">⏰ HEARTBEAT</span>' : ''}
-          </div>
-          <div class="pubkey" onclick="copyAddr('${a.publicKey}')" title="Click to copy">${(a.publicKey||'').slice(0,14)}...${(a.publicKey||'').slice(-6)}</div>
-          ${isActive ? `<div class="heartbeat-bar"><div class="heartbeat-fill" style="width:${Math.random()*60+40}%"></div></div>` : ''}
+  function renderAgents(agents){
+    const list=document.getElementById('agentList');
+    const ROLE_ICONS={orchestrator:'🧠',dca_agent:'📈',trailing_stop_agent:'📉',scout_agent:'🏹',risk_manager:'🚨',custom:'💸'};
+    list.innerHTML=agents.map(a=>{
+      const isVault=a.agentId==='orchestrator_main';
+      const isProt=PROTECTED.includes(a.agentId);
+      const xurl=`https://explorer.solana.com/address/${a.publicKey||''}?cluster=devnet`;
+      return `<div class="ac ${a.active?'active':''} ${a.heartbeatActive?'hb':''} ${isVault?'vault-card':''}" id="c-${a.agentId}">
+        <div class="atop">
+          <div><div class="an">${ROLE_ICONS[a.role]||'🤖'} ${a.agentId}</div><div class="ar">${a.role}${isVault?' · VAULT':''}</div></div>
+          <div class="ab">${(a.balance||0).toFixed(5)}<br/><span style="font-size:.52rem;color:var(--muted)">SOL</span></div>
         </div>
-      `;
+        <div class="tags">
+          <span class="tag ${a.active?'tag-on':'tag-off'}">${a.active?'● ACTIVE':'○ IDLE'}</span>
+          ${a.heartbeatActive?'<span class="tag tag-hb">⏰ HB</span>':''}
+          ${isVault?'<span class="tag tag-v">💰 VAULT</span>':''}
+          ${isProt&&!isVault?'<span class="tag tag-p">🔒 CORE</span>':''}
+        </div>
+        <div class="abts">
+          ${!a.heartbeatActive?`<button class="abt bt-a" onclick="activateAgent('${a.agentId}')">▶ Activate</button>`:`<button class="abt bt-s" onclick="sleepAgent('${a.agentId}')">⏸ Sleep</button>`}
+          ${!isVault?`<button class="abt bt-r" onclick="recallFunds('${a.agentId}')">↩ Recall</button>`:''}
+          <a class="bt-e" href="${xurl}" target="_blank">🔗</a>
+          ${!isProt?`<button class="abt bt-k" onclick="sackAgent('${a.agentId}')">✕ Sack</button>`:''}
+        </div>
+        ${a.active?'<div class="hbbar"><div class="hbfill"></div></div>':''}
+        <div class="pk" onclick="copyAddr('${a.publicKey||''}')">
+          ${(a.publicKey||'').slice(0,16)}...${(a.publicKey||'').slice(-6)}
+        </div>
+      </div>`;
     }).join('');
   }
 
-  // ── COMMAND ────────────────────────────────────────────────────────────────
-  async function cmd(command) {
-    document.getElementById('cmdInput').value = command;
-    await sendCmd();
+  // MISSION
+  async function refreshMission(){
+    try{
+      const d=await(await fetch('/api/mission')).json();
+      if(d.mission) setMissionText(d.mission,d.cyclesCompleted,d.cyclesTotal);
+    }catch(e){}
+  }
+  function setMissionText(m,done,total){
+    document.getElementById('missionText').textContent=m||'No mission set';
+    const p=total?Math.min(100,Math.round((done/total)*100)):Math.min(100,Math.round((mCycles/mTotal)*100));
+    document.getElementById('mPct').textContent=p+'%';
+    document.getElementById('mFill').style.width=p+'%';
+    document.getElementById('mCycles').textContent=`${done||mCycles}/${total||mTotal} cycles`;
+  }
+  function stepMission(){ mCycles++; setMissionText(null,mCycles,mTotal); }
+
+  // VAULT
+  async function refreshVault(){
+    try{
+      const d=await(await fetch('/api/vault')).json();
+      if(d.address){ const el=document.getElementById('vAddr'); el.textContent=d.address; el.dataset.addr=d.address; }
+    }catch(e){}
+  }
+  function copyVault(){
+    const el=document.getElementById('vAddr');
+    const a=el.dataset.addr||el.textContent;
+    if(a&&a!=='Fetching vault address...'){ navigator.clipboard.writeText(a).catch(()=>{}); addTx('CREATE',`📋 Vault address copied: ${a.slice(0,20)}...`); }
   }
 
-  async function sendCmd() {
-    const input = document.getElementById('cmdInput');
-    const btn = document.getElementById('cmdBtn');
-    const command = input.value.trim();
-    if (!command) return;
-
-    btn.disabled = true;
-    document.getElementById('aiResponse').textContent = '🤔 Orchestrator thinking...';
-    addThought({ type: 'READ', agentId: 'orchestrator', message: `Command received: "${command}"`, timestamp: new Date().toISOString() });
-
-    try {
-      const res = await fetch('/api/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ command })
-      });
-      const data = await res.json();
-      document.getElementById('aiResponse').textContent = data.response || data.error;
-      input.value = '';
-    } catch(e) {
-      document.getElementById('aiResponse').textContent = 'Error: ' + e.message;
-    }
-    btn.disabled = false;
+  // GOVERNOR
+  async function refreshGov(){
+    try{
+      const d=await(await fetch('/api/governor/status')).json();
+      if(d.dailyLimitSOL) document.getElementById('gLimit').textContent=d.dailyLimitSOL+' SOL';
+      if(d.spentToday!==undefined){
+        document.getElementById('gSpent').textContent=d.spentToday.toFixed(4)+' SOL';
+        document.getElementById('gRem').textContent=((d.dailyLimitSOL||2)-d.spentToday).toFixed(4)+' SOL';
+      }
+      if(d.approvalRate!==undefined) document.getElementById('gApproval').textContent=d.approvalRate+'%';
+    }catch(e){}
   }
 
-  // ── LOG ────────────────────────────────────────────────────────────────────
-  function addLog(msg) {
-    const log = document.getElementById('miniLog');
-    if (log.querySelector('[data-placeholder]')) log.innerHTML = '';
-    const el = document.createElement('div');
-    el.className = 'mini-log-entry';
-    el.innerHTML = `<span style="color:var(--muted);font-size:0.6rem">${new Date().toLocaleTimeString()}</span> <span>${msg}</span>`;
-    log.appendChild(el);
-    log.scrollTop = log.scrollHeight;
-    if (log.children.length > 100) log.removeChild(log.firstChild);
+  // AGENT ACTIONS
+  async function activateAgent(id){
+    await fetch(`/api/agents/${id}/activate`,{method:'POST'}).catch(()=>{});
+    addTx('CREATE',`▶ ${id} activated — heartbeat starting`); refreshAll();
+  }
+  async function sleepAgent(id){
+    await fetch(`/api/agents/${id}/sleep`,{method:'POST'}).catch(()=>{});
+    addTx('CREATE',`⏸ ${id} sleeping`); refreshAll();
+  }
+  async function recallFunds(id){
+    if(id==='orchestrator_main'){ addTx('BLOCK','🛡️ Cannot recall from vault'); return; }
+    const c=document.getElementById(`c-${id}`);
+    if(c) c.classList.add('recalling');
+    try{
+      const d=await(await fetch(`/api/agents/${id}/recall`,{method:'POST'})).json();
+      addTx('RECALL',d.success?`↩ ${d.amount?.toFixed(4)||'?'} SOL recalled from ${id} → vault`:`Recall: ${d.error||'low balance'}`);
+    }catch(e){ addTx('BLOCK','Recall error'); }
+    if(c) setTimeout(()=>c.classList.remove('recalling'),3000);
+    refreshAll();
   }
 
-  // ── UTILS ──────────────────────────────────────────────────────────────────
-  function shortenTx(sig) {
-    if (!sig) return '—';
-    return sig.slice(0, 8) + '...' + sig.slice(-4);
+  // SACK
+  function sackAgent(id){
+    if(PROTECTED.includes(id)){ addTx('BLOCK',`🛡️ ${id} is a protected core agent — cannot be sacked`); return; }
+    pendingSack=id;
+    document.getElementById('sackMsg').textContent=`"${id}" will be removed. Any remaining funds will be recalled to vault first.`;
+    document.getElementById('sackOv').classList.add('show');
+  }
+  function cancelSack(){ pendingSack=null; document.getElementById('sackOv').classList.remove('show'); }
+  async function confirmSack(){
+    document.getElementById('sackOv').classList.remove('show');
+    if(!pendingSack) return;
+    try{
+      const d=await(await fetch(`/api/agents/${pendingSack}/sack`,{method:'DELETE'})).json();
+      addTx('SACK',`🔴 ${pendingSack} sacked${d.recalledSOL?` | ${d.recalledSOL.toFixed(4)} SOL → vault`:''}`);
+      const c=document.getElementById(`c-${pendingSack}`);
+      if(c){ c.classList.add('sacked'); setTimeout(()=>c.remove(),1800); }
+    }catch(e){ addTx('BLOCK',`Sack failed: ${e.message}`); }
+    pendingSack=null; refreshAll();
   }
 
-  function copyAddr(addr) {
-    navigator.clipboard.writeText(addr);
-    addLog(`📋 Copied: ${addr.slice(0, 16)}...`);
+  // COMMAND
+  function cmd(c){ document.getElementById('ci').value=c; sendCmd(); }
+  async function sendCmd(){
+    const input=document.getElementById('ci'), btn=document.getElementById('cb');
+    const c=input.value.trim(); if(!c) return;
+    btn.disabled=true; document.getElementById('air').textContent='🤔 Orchestrator reasoning...';
+    addThought({type:'READ',agentId:'orchestrator_main',message:`Command: "${c}"`,timestamp:new Date().toISOString()});
+    try{
+      const d=await(await fetch('/api/execute',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({command:c})})).json();
+      document.getElementById('air').textContent=d.response||d.error||'No response';
+      input.value='';
+      if(c.toLowerCase().includes('mission')||c.toLowerCase().includes('change')) setTimeout(refreshMission,1000);
+    }catch(e){ document.getElementById('air').textContent='Error: '+e.message; }
+    btn.disabled=false;
   }
 
-  function escHtml(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  // SIMULATION
+  async function runSim(){
+    const btn=document.getElementById('simBtn');
+    btn.disabled=true; btn.textContent='⏳ Simulating...';
+    addTx('CREATE','🎬 DEMO SIMULATION STARTED — firing all scenarios...');
+    try{
+      const d=await(await fetch('/api/simulate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'full'})})).json();
+      addTx('CREATE',`✅ Simulation complete — ${d.eventsGenerated||'?'} events | All metrics populated`);
+    }catch(e){ addTx('BLOCK','Simulation error: '+e.message); }
+    btn.disabled=false; btn.textContent='🎬 Run Full Demo Simulation';
   }
 
-  // ── PRICE TICKER ───────────────────────────────────────────────────────────
-  async function updatePriceTicker() {
-    try {
-      const res = await fetch('/api/price/So11111111111111111111111111111111111111112');
-      const data = await res.json();
-      document.getElementById('tickerSol').textContent = '$' + (data.price || 0).toFixed(2);
-    } catch(e) {}
+  // PRICE
+  async function updatePrice(){
+    try{
+      const d=await(await fetch('/api/price/So11111111111111111111111111111111111111112')).json();
+      if(d.price) document.getElementById('tSol').textContent='$'+Number(d.price).toFixed(2);
+    }catch(e){}
   }
 
-  // ── ENTER TO SEND ──────────────────────────────────────────────────────────
-  document.addEventListener('DOMContentLoaded', () => {
-    const input = document.getElementById('cmdInput');
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendCmd(); }
-    });
-  });
+  // UTILS
+  function set(id,txt,col){const el=document.getElementById(id);if(el){el.textContent=txt;if(col)el.style.color=col;}}
+  function inc(id,v){const el=document.getElementById(id);if(el)el.textContent=v;}
+  function copyAddr(a){navigator.clipboard.writeText(a).catch(()=>{}); addTx('CREATE',`📋 ${a.slice(0,20)}...`);}
+  function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function showNotify(m){const el=document.getElementById('mn');el.textContent=m;el.style.display='block';setTimeout(()=>el.style.display='none',4000);}
+  function updatePort(d){
+    if(d.totalPortfolioSOL!==undefined) document.getElementById('sSOL').textContent=d.totalPortfolioSOL.toFixed(4);
+    if(d.agentCount!==undefined){ document.getElementById('sAgents').textContent=d.agentCount; document.getElementById('aBadge').textContent=d.agentCount+' agents'; }
+    if(d.agents?.length) renderAgents(d.agents);
+  }
 
-  // ── INIT ───────────────────────────────────────────────────────────────────
-  connectWS();
-  refreshPortfolio();
-  updatePriceTicker();
-  setInterval(refreshPortfolio, 15000);
-  setInterval(updatePriceTicker, 30000);
+  document.getElementById('ci').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendCmd();}});
+
+  // INIT
+  connectWS(); refreshAll(); updatePrice();
+  setInterval(refreshAll,20000); setInterval(updatePrice,30000);
 </script>
 </body>
 </html>

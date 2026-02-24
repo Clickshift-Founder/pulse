@@ -149,6 +149,20 @@ export class Orchestrator extends EventEmitter {
     thoughtStream.think("orchestrator", "READ", `📨 Received command: "${command}"`);
     thoughtStream.thinking("orchestrator", "Processing through AI reasoning engine...");
 
+    // Detect mission change FIRST — don't need AI for this
+    const newMission = this.detectMissionChange(command);
+    if (newMission) {
+      this.setMission(newMission);
+    }
+
+    // Detect capital distribution commands
+    if (command.toLowerCase().includes("distribute") && command.toLowerCase().includes("capital")) {
+      const result = await this.distributeCapital("role_based");
+      return result.success
+        ? `Capital distributed: ${Object.entries(result.distributed).map(([id, amt]) => `${id}: ${(amt as number).toFixed(4)} SOL`).join(", ")}`
+        : `Distribution failed: ${result.error}`;
+    }
+
     const portfolioContext = await this.buildPortfolioContext();
 
     const systemPrompt = `You are the Pulse AI Orchestrator — the brain of a multi-agent DeFi wallet system on Solana.
@@ -343,7 +357,203 @@ Respond with JSON: { "reasoning": "...", "actions": [{"action": "...", "agentId"
     };
   }
 
+  // ─── Mission Management ───────────────────────────────────────────────────
+
+  private currentMission: string = "Grow portfolio conservatively. Protect capital first. DCA into quality tokens only.";
+  private missionCycles: number = 0;
+  private missionStartCycle: number = 0;
+
+  getMission(): string { return this.currentMission; }
+
+  setMission(newMission: string): void {
+    const old = this.currentMission;
+    this.currentMission = newMission;
+    this.missionStartCycle = this.missionCycles;
+    thoughtStream.think("orchestrator", "MISSION", `📡 Mission updated: "${newMission.slice(0, 80)}"`);
+    // Broadcast to all agents via thought stream + event
+    for (const agentId of Object.keys(this.agents)) {
+      thoughtStream.think(agentId, "READ", `📡 Mission change received: "${newMission.slice(0, 60)}"`);
+    }
+    this.emit("mission_changed", { mission: newMission, previousMission: old, timestamp: new Date().toISOString() });
+  }
+
+  getMissionStatus(): { mission: string; cyclesCompleted: number; cyclesTotal: number; pct: number } {
+    const cyclesCompleted = this.missionCycles - this.missionStartCycle;
+    const cyclesTotal = 20; // Default mission horizon
+    return { mission: this.currentMission, cyclesCompleted, cyclesTotal, pct: Math.min(100, Math.round((cyclesCompleted / cyclesTotal) * 100)) };
+  }
+
+  // ─── Agent Lifecycle Control ─────────────────────────────────────────────
+
+  activateAgent(agentId: string, intervalMs: number = 30000): boolean {
+    const agent = this.agents[agentId];
+    if (!agent) return false;
+    if (agent.heartbeat) { agent.heartbeat.start(); } else {
+      agent.heartbeat = new HeartbeatEngine(agent.wallet, this.connection, intervalMs);
+      this.wireHeartbeatEvents(agent.heartbeat, agentId);
+      agent.heartbeat.start();
+    }
+    agent.active = true;
+    thoughtStream.wake(agentId, `▶ Agent activated by orchestrator command`);
+    this.emit("agent_activated", { agentId, role: agent.role });
+    return true;
+  }
+
+  sleepAgent(agentId: string): boolean {
+    const agent = this.agents[agentId];
+    if (!agent) return false;
+    if (agent.heartbeat) agent.heartbeat.stop();
+    if (agent.strategy instanceof (require("../strategies/DCAStrategy").DCAStrategy)) (agent.strategy as any).stop();
+    agent.active = false;
+    thoughtStream.sleep(agentId, `⏸ Agent put to sleep by orchestrator`);
+    this.emit("agent_slept", { agentId });
+    return true;
+  }
+
+  // ─── Governor: Recall Funds from Agent → Vault ──────────────────────────
+
+  async recallFunds(agentId: string): Promise<{ success: boolean; amount: number; signature?: string; error?: string }> {
+    const agent = this.agents[agentId];
+    if (!agent) return { success: false, amount: 0, error: "Agent not found" };
+    if (agentId === this.orchestratorWallet.agentId) return { success: false, amount: 0, error: "Cannot recall from vault" };
+
+    const balance = await agent.wallet.getBalance();
+    const recallAmount = Math.max(0, balance - 0.002); // Leave 0.002 SOL for gas
+
+    if (recallAmount < 0.001) return { success: false, amount: 0, error: "Insufficient balance to recall" };
+
+    try {
+      thoughtStream.think("orchestrator", "EXECUTE", `↩ Governor demanding recall: ${recallAmount.toFixed(4)} SOL from ${agentId} → vault`);
+      const sig = await agent.wallet.sendSOL(this.orchestratorWallet.publicKeyString, recallAmount);
+      thoughtStream.success("orchestrator", `✅ Recall complete: ${recallAmount.toFixed(4)} SOL returned to vault. Sig: ${sig.slice(0, 12)}...`);
+      this.emit("governor_recall", { agentId, amount: recallAmount, signature: sig, timestamp: new Date().toISOString() });
+      return { success: true, amount: recallAmount, signature: sig };
+    } catch (err: any) {
+      thoughtStream.error("orchestrator", `Recall failed: ${err.message}`);
+      return { success: false, amount: 0, error: err.message };
+    }
+  }
+
+  // ─── Sack Agent (Recall + Terminate) ────────────────────────────────────
+
+  async sackAgent(agentId: string): Promise<{ success: boolean; recalledSOL?: number; error?: string }> {
+    const PROTECTED = ["orchestrator_main", "risk_manager_01"];
+    if (PROTECTED.includes(agentId)) return { success: false, error: "Protected agent cannot be sacked" };
+
+    const agent = this.agents[agentId];
+    if (!agent) return { success: false, error: "Agent not found" };
+
+    let recalledSOL = 0;
+    // Recall funds first
+    const recall = await this.recallFunds(agentId);
+    if (recall.success) recalledSOL = recall.amount;
+
+    // Stop all activity
+    if (agent.heartbeat) agent.heartbeat.stop();
+    if (agent.strategy) { try { (agent.strategy as any).stop(); } catch {} }
+    agent.active = false;
+
+    // Remove from registry
+    delete this.agents[agentId];
+
+    thoughtStream.think("orchestrator", "ALERT", `🔴 Agent ${agentId} has been sacked. ${recalledSOL ? `${recalledSOL.toFixed(4)} SOL recalled.` : ""}`);
+    this.emit("agent_sacked", { agentId, recalledSOL, timestamp: new Date().toISOString() });
+    return { success: true, recalledSOL };
+  }
+
+  // ─── Capital Distribution: Vault → Agents ───────────────────────────────
+
+  async distributeCapital(strategy: "equal" | "role_based" = "role_based"): Promise<{ success: boolean; distributed: Record<string, number>; error?: string }> {
+    const vaultBalance = await this.orchestratorWallet.getBalance();
+    const reserveSOL = 0.1; // Keep in vault for operations
+    const distributable = Math.max(0, vaultBalance - reserveSOL);
+
+    if (distributable < 0.01) return { success: false, distributed: {}, error: `Insufficient vault balance: ${vaultBalance.toFixed(4)} SOL` };
+
+    const agents = Object.entries(this.agents);
+    const weights: Record<string, number> = {
+      dca_agent: 0.40,
+      trailing_stop_agent: 0.25,
+      scout_agent: 0.15,
+      risk_manager: 0.05,
+      custom: 0.15,
+    };
+
+    const distributed: Record<string, number> = {};
+    let totalSent = 0;
+
+    thoughtStream.plan("orchestrator", `💸 Distributing ${distributable.toFixed(4)} SOL across ${agents.length} agents`);
+
+    for (const [agentId, agent] of agents) {
+      if (agentId === this.orchestratorWallet.agentId) continue;
+      const weight = strategy === "equal" ? 1 / agents.length : (weights[agent.role] || 0.10);
+      const amount = parseFloat((distributable * weight).toFixed(4));
+      if (amount < 0.001) continue;
+      try {
+        await this.orchestratorWallet.sendSOL(agent.wallet.publicKeyString, amount);
+        distributed[agentId] = amount;
+        totalSent += amount;
+        thoughtStream.execute(agentId, `💰 Received ${amount.toFixed(4)} SOL from vault`);
+      } catch (err: any) {
+        thoughtStream.error("orchestrator", `Distribution to ${agentId} failed: ${err.message?.slice(0, 50)}`);
+      }
+    }
+
+    this.emit("capital_distributed", { totalSOL: totalSent, agentCount: Object.keys(distributed).length, distributed });
+    thoughtStream.success("orchestrator", `✅ Capital distribution complete: ${totalSent.toFixed(4)} SOL sent to ${Object.keys(distributed).length} agents`);
+    return { success: true, distributed };
+  }
+
+  // ─── Risk Manager: Halt Agent ────────────────────────────────────────────
+
+  haltAgent(agentId: string, reason: string): void {
+    const agent = this.agents[agentId];
+    if (!agent) return;
+    if (agent.strategy) { try { (agent.strategy as any).stop(); } catch {} }
+    agent.active = false;
+    thoughtStream.alert(agentId, `⛔ HALTED by Risk Manager: ${reason}`);
+    this.emit("risk_halt", { agentId, reason, timestamp: new Date().toISOString() });
+  }
+
+  haltAll(reason: string): void {
+    for (const agentId of Object.keys(this.agents)) {
+      this.haltAgent(agentId, reason);
+    }
+    thoughtStream.alert("orchestrator", `🚨 ALL AGENTS HALTED: ${reason}`);
+  }
+
+  // ─── Mission increment (called by heartbeat cycles) ──────────────────────
+
+  incrementMissionCycle(): void { this.missionCycles++; }
+
+  // ─── Detect + execute mission change from natural language ───────────────
+
+  private detectMissionChange(command: string): string | null {
+    const lower = command.toLowerCase();
+    if (lower.includes("change mission") || lower.includes("new mission") || lower.startsWith("mission:")) {
+      // Extract the new mission text
+      const idx = lower.indexOf("mission");
+      const after = command.slice(idx + 7).replace(/^[:\s-]+/, "").trim();
+      if (after.length > 5) return after;
+    }
+    return null;
+  }
+
+  // ─── Remove Agent from Registry (used by sack route) ────────────────────
+
+  removeAgent(agentId: string): void {
+    const agent = this.agents[agentId];
+    if (agent) {
+      if (agent.heartbeat) agent.heartbeat.stop();
+      if (agent.strategy) { try { (agent.strategy as any).stop(); } catch {} }
+      delete this.agents[agentId];
+    }
+    thoughtStream.think("orchestrator", "EXECUTE", `🔴 ${agentId} removed from swarm registry`);
+  }
+
   getThoughtStream() { return thoughtStream; }
   getActionLog() { return this.actionLog; }
   getAgents() { return this.agents; }
+  getVaultAddress(): string { return this.orchestratorWallet.publicKeyString; }
+  getVaultBalance(): Promise<number> { return this.orchestratorWallet.getBalance(); }
 }
