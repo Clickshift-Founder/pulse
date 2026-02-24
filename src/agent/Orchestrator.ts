@@ -369,7 +369,7 @@ Respond with JSON: { "reasoning": "...", "actions": [{"action": "...", "agentId"
     const old = this.currentMission;
     this.currentMission = newMission;
     this.missionStartCycle = this.missionCycles;
-    thoughtStream.think("orchestrator", "MISSION", `📡 Mission updated: "${newMission.slice(0, 80)}"`);
+    thoughtStream.think("orchestrator", "MISSION" as any, `📡 Mission updated: "${newMission.slice(0, 80)}"`);
     // Broadcast to all agents via thought stream + event
     for (const agentId of Object.keys(this.agents)) {
       thoughtStream.think(agentId, "READ", `📡 Mission change received: "${newMission.slice(0, 60)}"`);
