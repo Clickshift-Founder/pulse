@@ -302,6 +302,7 @@
 
     <!-- Simulate Demo -->
     <button class="sim-btn" id="simBtn" onclick="runSim()">🎬 Run Full Demo Simulation</button>
+    <button class="sim-btn" id="proveBtn" onclick="proveOnChain()" style="background:linear-gradient(135deg,#10b981,#059669);margin-top:.4rem">🔗 Prove On-Chain (Real Devnet Txs)</button>
 
     <!-- TX Log -->
     <div class="txs">
@@ -347,7 +348,14 @@
       case 'dca_execution':
         inc('sTrades',++trades);
         const s=data.execution?.signature;
-        addTx('SWAP',`💰 DCA | ${data.execution?.amountAcquired||'?'} tokens | ${s?`<a href="https://explorer.solana.com/tx/${s}?cluster=devnet" target="_blank">${s.slice(0,10)}...</a>`:''}`);
+        // Real signatures are 87-88 chars base58. Sim ones are short/contain "Sim"
+        const isRealSig = s && s.length > 60 && !s.includes('Sim') && !s.includes('devnet');
+        const sigDisplay = s
+          ? isRealSig
+            ? `<a href="https://explorer.solana.com/tx/${s}?cluster=devnet" target="_blank" style="color:var(--green)">🔗 ${s.slice(0,14)}... (REAL)</a>`
+            : `<span style="color:var(--muted)">${s.slice(0,14)}... [simulation]</span>`
+          : '—';
+        addTx('SWAP',`💰 DCA | ${data.execution?.amountAcquired||'?'} ${data.execution?.token||'tokens'} | ${sigDisplay}`);
         refreshAll(); break;
       case 'governor_block':
         inc('sBlocked',++blocked); inc('gBlocked',++gBlocked);
@@ -553,6 +561,39 @@
       if(c.toLowerCase().includes('mission')||c.toLowerCase().includes('change')) setTimeout(refreshMission,1000);
     }catch(e){ document.getElementById('air').textContent='Error: '+e.message; }
     btn.disabled=false;
+  }
+
+  // PROVE ON-CHAIN — real devnet transactions, real explorer links
+  async function proveOnChain(){
+    const btn=document.getElementById('proveBtn');
+    btn.disabled=true; btn.textContent='⏳ Signing real transactions...';
+    addTx('CREATE','🔗 PROVE ON-CHAIN: executing real devnet transactions — each agent signs autonomously...');
+    try{
+      const d=await(await fetch('/api/demo/prove',{method:'POST'})).json();
+      if(d.transactions){
+        d.transactions.forEach(tx=>{
+          if(tx.status==='confirmed'){
+            // REAL transaction — show explorer link prominently
+            addTx('SWAP',
+              `✅ REAL TX | ${tx.step} | ${tx.amount} SOL | ` +
+              `<a href="${tx.explorerTx}" target="_blank" style="color:var(--green);font-weight:bold">` +
+              `${tx.signature.slice(0,14)}... 🔗 View on Explorer</a>`
+            );
+          } else if(tx.status==='skipped'){
+            addTx('BLOCK',`⚠️ Skipped: ${tx.step} — ${tx.error}`);
+          } else {
+            addTx('BLOCK',`❌ Failed: ${tx.step} — ${tx.error}`);
+          }
+        });
+        const c=d.summary?.confirmed||0;
+        addTx('CREATE',
+          c>0
+            ? `🎯 ${c} real on-chain transactions confirmed. All signed autonomously by agent keypairs. Links above are verifiable on Solana Explorer devnet.`
+            : `⚠️ No txs confirmed. Fund vault and distribute capital first, then run again.`
+        );
+      }
+    }catch(e){ addTx('BLOCK','Prove error: '+e.message); }
+    btn.disabled=false; btn.textContent='🔗 Prove On-Chain (Real Devnet Txs)';
   }
 
   // SIMULATION
