@@ -63,7 +63,8 @@
     .ac.active{border-color:rgba(99,102,241,.35);}
     .ac.hb{border-color:rgba(16,185,129,.28);}
     .ac.vault-card{border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.02);}
-    .ac.sacked{opacity:.35;pointer-events:none;border-color:var(--red);}
+    .ac.sacked{opacity:.4;border-color:var(--red);background:rgba(239,68,68,.03);}
+    .ac.sacked .abt{pointer-events:none;opacity:.3;} /* disable action buttons but not links */
     .atop{display:flex;justify-content:space-between;margin-bottom:.35rem;}
     .an{font-size:.75rem;font-weight:bold;}
     .ar{font-size:.56rem;color:var(--muted);}
@@ -316,6 +317,10 @@
   // STATE
   let ws, tTotal=0,beats=0,trades=0,blocked=0,rugs=0,halts=0,txCnt=0,filter='';
   let pendingSack=null, mCycles=0, mTotal=20, gSpent=0, gBlocked=0;
+
+  // Graveyard state — persists across renderAgents() calls
+  // Map of agentId → { agentId, publicKey, role, recalledSOL, sackedAt }
+  const sackedAgents = new Map();
   const ICONS={WAKE:'⏰',READ:'📖',THINK:'🤔',PLAN:'📋',EXECUTE:'⚡',OBSERVE:'👁️',ALERT:'🚨',SLEEP:'💤',ERROR:'❌',SUCCESS:'✅',MISSION:'📡'};
   const PROTECTED=['orchestrator_main','risk_manager_01'];
 
@@ -535,6 +540,7 @@
     document.getElementById('sackOv').classList.add('show');
   }
   function cancelSack(){ pendingSack=null; document.getElementById('sackOv').classList.remove('show'); }
+
   async function confirmSack(){
     document.getElementById('sackOv').classList.remove('show');
     if(!pendingSack) return;
@@ -542,58 +548,79 @@
       const d=await(await fetch(`/api/agents/${pendingSack}/sack`,{method:'DELETE'})).json();
       const recalled=d.recalledSOL||0;
       addTx('SACK',`🔴 ${pendingSack} sacked${recalled?` | ${recalled.toFixed(4)} SOL → vault`:' | wallet empty'}`);
-
-      // Move card to sacked graveyard — don't delete it
+      // Store in persistent state — survives renderAgents() re-renders
       const card=document.getElementById(`c-${pendingSack}`);
-      if(card){
-        card.classList.add('sacked');
-        // Swap action buttons for a view-wallet link
-        const btns=card.querySelector('.abts');
-        if(btns){
-          // Get wallet address from the explorer link if present
-          const pubkey=card.dataset?.pubkey||'';
-          btns.innerHTML=pubkey
-            ? `<a class="ab" style="color:var(--muted);border-color:var(--muted);text-decoration:none;font-size:.55rem;padding:.18rem .4rem;border:1px solid;border-radius:3px;" href="https://explorer.solana.com/address/${pubkey}?cluster=devnet" target="_blank">🔗 View Wallet</a>`
-            : `<span style="font-size:.55rem;color:var(--red)">🔴 SACKED</span>`;
-        }
-        // Add recalled badge
-        const badge=document.createElement('div');
-        badge.style.cssText='font-size:.52rem;color:var(--red);margin-top:.2rem;';
-        badge.textContent=recalled?`↩ ${recalled.toFixed(4)} SOL returned to vault`:'Wallet empty at termination';
-        card.appendChild(badge);
-
-        // Move to graveyard section
-        const graveyard=getOrCreateGraveyard();
-        graveyard.appendChild(card);
-      }
+      sackedAgents.set(pendingSack,{
+        agentId:pendingSack,
+        publicKey:card?.dataset?.pubkey||'',
+        recalledSOL:recalled,
+        sackedAt:new Date().toLocaleTimeString()
+      });
+      renderGraveyard();
     }catch(e){ addTx('BLOCK',`Sack failed: ${e.message}`); }
     pendingSack=null; refreshAll();
   }
 
-  function getOrCreateGraveyard(){
-    let g=document.getElementById('agentGraveyard');
-    if(!g){
-      const section=document.createElement('div');
-      section.style.cssText='flex-shrink:0;border-top:1px solid var(--border);';
-      section.innerHTML=`
-        <div class="ptitle" style="cursor:pointer" onclick="toggleGraveyard()">
-          <span>🔴 Sacked Agents</span>
-          <span id="graveBadge" style="color:var(--red);font-size:.58rem">▲</span>
-        </div>
-        <div id="agentGraveyard" style="padding:.4rem;"></div>`;
-      document.querySelector('.pl').appendChild(section);
-      g=document.getElementById('agentGraveyard');
+  function renderGraveyard(){
+    if(sackedAgents.size===0){ const w=document.getElementById('graveyardWrap'); if(w)w.remove(); return; }
+    if(!document.getElementById('graveyardWrap')){
+      const wrap=document.createElement('div');
+      wrap.id='graveyardWrap';
+      wrap.style.cssText='flex-shrink:0;border-top:1px solid var(--border);';
+      wrap.innerHTML=`<div class="ptitle" style="cursor:pointer" onclick="toggleGraveyard()">
+        <span>🔴 Sacked Agents</span><span id="graveBadge" style="color:var(--red);font-size:.58rem">▲ ${sackedAgents.size}</span>
+      </div><div id="agentGraveyard" style="padding:.4rem;"></div>`;
+      document.querySelector('.pl').appendChild(wrap);
     }
-    return g;
+    const g=document.getElementById('agentGraveyard');
+    const badge=document.getElementById('graveBadge');
+    if(badge) badge.textContent='▲ '+sackedAgents.size;
+    if(!g) return;
+    g.innerHTML=[...sackedAgents.values()].map(s=>{
+      const xurl=s.publicKey?`https://explorer.solana.com/address/${s.publicKey}?cluster=devnet`:'';
+      return `<div class="ac sacked">
+        <div class="atop">
+          <div><div class="an" style="color:var(--red);font-size:.7rem;">🔴 ${s.agentId}</div>
+          <div class="ar">Sacked ${s.sackedAt}</div></div>
+          <div style="font-size:.62rem;color:var(--muted);text-align:right">
+            ${s.recalledSOL?s.recalledSOL.toFixed(4)+' SOL<br><span style="font-size:.5rem;color:var(--green)">recalled ✓</span>':'empty'}
+          </div>
+        </div>
+        <div style="display:flex;gap:.35rem;margin-top:.3rem;flex-wrap:wrap;align-items:center;">
+          ${xurl?`<a href="${xurl}" target="_blank"
+            style="display:inline-block;font-size:.58rem;padding:.18rem .45rem;background:rgba(34,211,238,.06);border:1px solid rgba(34,211,238,.25);color:var(--a2);border-radius:3px;text-decoration:none;cursor:pointer;">
+            🔗 Explorer</a>`:''}
+          <button onclick="reviveAgent('${s.agentId}')"
+            style="font-size:.58rem;padding:.18rem .45rem;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);color:var(--green);border-radius:3px;cursor:pointer;pointer-events:all;">
+            ↩ Revive</button>
+        </div>
+      </div>`;
+    }).join('');
   }
+
   function toggleGraveyard(){
     const g=document.getElementById('agentGraveyard');
     const b=document.getElementById('graveBadge');
     if(!g) return;
     const hidden=g.style.display==='none';
     g.style.display=hidden?'':'none';
-    if(b) b.textContent=hidden?'▲':'▼';
+    if(b) b.textContent=(hidden?'▲ ':'▼ ')+sackedAgents.size;
   }
+
+  async function reviveAgent(id){
+    addTx('CREATE',`↩ Reviving ${id}...`);
+    try{
+      const d=await(await fetch(`/api/agents/${id}/revive`,{method:'POST'})).json();
+      if(d.success){
+        sackedAgents.delete(id);
+        renderGraveyard();
+        addTx('CREATE',`✅ ${id} revived — heartbeat restarting`);
+        refreshAll();
+      } else { addTx('BLOCK',`Revive failed: ${d.error||'unknown error'}`); }
+    }catch(e){ addTx('BLOCK',`Revive error: ${e.message}`); }
+  }
+
+
 
   // COMMAND
   function cmd(c){ document.getElementById('ci').value=c; sendCmd(); }

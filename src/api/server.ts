@@ -700,6 +700,42 @@ app.get("/api/proof/wallets", async (_req, res) => {
   }
 });
 
+// ─── Revive — re-register a sacked agent back into the active swarm ──────────
+
+app.post("/api/agents/:agentId/revive", async (req, res) => {
+  const { agentId } = req.params;
+  if (!orchestrator) return res.status(503).json({ error: "Swarm not ready" });
+
+  try {
+    // Check wallet file still exists
+    const all = AgentWallet.listAll();
+    const entry = all.find(a => a.agentId === agentId);
+    if (!entry) return res.status(404).json({ error: `No wallet file found for ${agentId}. Cannot revive.` });
+
+    // Check not already active
+    const portfolio = await orchestrator.buildPortfolioContext();
+    if (portfolio.agents?.find((a: any) => a.agentId === agentId)) {
+      return res.status(400).json({ error: `${agentId} is already active in the swarm` });
+    }
+
+    // Reload wallet and re-register
+    const wallet = await AgentWallet.load(agentId, connection);
+    orchestrator.registerAgent(wallet, {
+      startHeartbeat: true,
+      heartbeatIntervalMs: 60000,
+      trackedMints: agentId.includes('dca') ? [TOKENS.BONK] : [],
+    });
+
+    thoughtStream.think("orchestrator_main", "SUCCESS",
+      `↩ Agent ${agentId} revived and re-registered into swarm. Heartbeat restarting.`);
+    broadcast("agent_registered", { agentId, role: entry.agentRole, revived: true });
+
+    res.json({ success: true, agentId, message: "Agent revived and heartbeat restarting" });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── ON-CHAIN PROOF — executes REAL devnet transactions between agent wallets ──
 //
 // This is the bounty evidence endpoint. Each agent autonomously signs and sends
