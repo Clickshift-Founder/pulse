@@ -4,6 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Pulse — Live Agent Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <style>
     :root{--bg:#060b14;--surface:#0d1624;--s2:#111e30;--border:#1a2d46;--accent:#6366f1;--a2:#22d3ee;--green:#10b981;--red:#ef4444;--yellow:#f59e0b;--purple:#a78bfa;--text:#e2e8f0;--muted:#4a6080;}
     *{box-sizing:border-box;margin:0;padding:0;}
@@ -38,7 +39,17 @@
     .sv{font-size:1.2rem;font-weight:bold;color:var(--a2);}
     .sl{font-size:.52rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:.15rem;}
 
-    /* GRID */
+    /* AGENT HEARTBEAT GRAPH */
+    .graph-panel{background:var(--surface);border-bottom:1px solid var(--border);padding:.6rem 1.5rem .5rem;}
+    .graph-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem;}
+    .graph-title{font-size:.6rem;text-transform:uppercase;letter-spacing:2px;color:var(--muted);}
+    .graph-title span{color:var(--a2);}
+    .graph-legend{display:flex;gap:.8rem;flex-wrap:wrap;}
+    .gl-item{display:flex;align-items:center;gap:.3rem;font-size:.58rem;color:var(--muted);}
+    .gl-dot{width:8px;height:3px;border-radius:2px;}
+    #agentGraph{width:100%;height:90px;display:block;}
+
+    /* GRID — leave as-is */
     .grid{display:grid;grid-template-columns:290px 1fr 310px;height:calc(100vh - 155px);}
     @media(max-width:900px){.grid{grid-template-columns:1fr;height:auto;}}
 
@@ -224,6 +235,22 @@
   <div class="sc"><div class="sv" id="sThoughts">0</div><div class="sl">Thoughts</div></div>
 </div>
 
+<!-- AGENT HEARTBEAT GRAPH -->
+<div class="graph-panel">
+  <div class="graph-hdr">
+    <div class="graph-title">⚡ Agent <span>Heartbeat Monitor</span> — Live Neural Activity</div>
+    <div class="graph-legend" id="graphLegend">
+      <div class="gl-item"><div class="gl-dot" style="background:#6366f1"></div>orchestrator</div>
+      <div class="gl-item"><div class="gl-dot" style="background:#10b981"></div>dca_agent</div>
+      <div class="gl-item"><div class="gl-dot" style="background:#22d3ee"></div>trailing_stop</div>
+      <div class="gl-item"><div class="gl-dot" style="background:#f59e0b"></div>scout</div>
+      <div class="gl-item"><div class="gl-dot" style="background:#ef4444"></div>risk_manager</div>
+      <div class="gl-item"><div class="gl-dot" style="background:#a78bfa"></div>off_ramper</div>
+    </div>
+  </div>
+  <canvas id="agentGraph"></canvas>
+</div>
+
 <div class="grid">
 
   <!-- LEFT: AGENTS -->
@@ -315,6 +342,118 @@
   const ICONS={WAKE:'⏰',READ:'📖',THINK:'🤔',PLAN:'📋',EXECUTE:'⚡',OBSERVE:'👁️',ALERT:'🚨',SLEEP:'💤',ERROR:'❌',SUCCESS:'✅',MISSION:'📡'};
   const PROTECTED=['orchestrator_main','risk_manager_01'];
 
+  // ── AGENT HEARTBEAT GRAPH ──────────────────────────────────────────────────
+  // ECG-style live chart. Each agent = colored line.
+  // SLEEP = flatline at 0, THINK = rises, EXECUTE = sharp spike, decay back down.
+
+  const AGENT_COLORS = {
+    'orchestrator_main':    '#6366f1',
+    'dca_agent_01':         '#10b981',
+    'trailing_stop_agent_01':'#22d3ee',
+    'scout_agent_01':       '#f59e0b',
+    'risk_manager_01':      '#ef4444',
+    'off_ramp_agent_01':    '#a78bfa',
+  };
+  const AGENT_LABELS = {
+    'orchestrator_main':      'orchestrator',
+    'dca_agent_01':           'dca_agent',
+    'trailing_stop_agent_01': 'trailing_stop',
+    'scout_agent_01':         'scout',
+    'risk_manager_01':        'risk_manager',
+    'off_ramp_agent_01':      'off_ramper',
+  };
+  const TYPE_SCORES = { WAKE:20, READ:35, THINK:55, PLAN:70, EXECUTE:100, OBSERVE:15, ALERT:90, SUCCESS:80, ERROR:60, SLEEP:0, MISSION:65 };
+  const GRAPH_POINTS = 80; // rolling window
+  const agentScores = {}; // agentId → current score (decays to 0)
+  const agentHistory = {}; // agentId → last N scores
+
+  // Initialise all known agents
+  Object.keys(AGENT_COLORS).forEach(id => {
+    agentScores[id] = 0;
+    agentHistory[id] = Array(GRAPH_POINTS).fill(0);
+  });
+
+  // Build time labels (empty — we use index as time)
+  const timeLabels = Array(GRAPH_POINTS).fill('');
+
+  const graphCtx = document.getElementById('agentGraph').getContext('2d');
+  const agentChart = new Chart(graphCtx, {
+    type: 'line',
+    data: {
+      labels: timeLabels,
+      datasets: Object.entries(AGENT_COLORS).map(([id, color]) => ({
+        label: AGENT_LABELS[id] || id,
+        data: [...agentHistory[id]],
+        borderColor: color,
+        backgroundColor: color + '18',
+        borderWidth: 1.5,
+        pointRadius: 0,
+        tension: 0.4,
+        fill: false,
+      }))
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 120 },
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      scales: {
+        x: { display: false },
+        y: {
+          display: true,
+          min: 0,
+          max: 110,
+          ticks: { display: false },
+          grid: { color: '#1a2d4640', drawBorder: false },
+        }
+      },
+      elements: { line: { borderCapStyle: 'round' } }
+    }
+  });
+
+  // Called every 800ms — decays all scores toward 0 (flatline when idle)
+  function graphDecayTick() {
+    Object.keys(agentScores).forEach((id, i) => {
+      // Decay current score by 25% per tick → natural ECG fall-off
+      agentScores[id] = Math.max(0, agentScores[id] * 0.72);
+      agentHistory[id].push(Math.round(agentScores[id]));
+      if (agentHistory[id].length > GRAPH_POINTS) agentHistory[id].shift();
+      agentChart.data.datasets[i].data = [...agentHistory[id]];
+    });
+    agentChart.update('none'); // 'none' skips animation for smooth real-time feel
+  }
+
+  // Called by thought handler — spikes the relevant agent's line
+  function graphSpikeAgent(agentId, thoughtType) {
+    const score = TYPE_SCORES[thoughtType] || 20;
+    // Map partial IDs (e.g. "dca_agent_01") to known keys
+    const key = Object.keys(AGENT_COLORS).find(k => agentId && agentId.includes(k.split('_01')[0])) || agentId;
+    if (agentScores[key] !== undefined) {
+      agentScores[key] = Math.max(agentScores[key], score);
+    } else {
+      // Unknown/custom agent — add dynamically
+      const customColor = '#'+Math.floor(Math.random()*0xaaaaaa+0x555555).toString(16);
+      agentScores[agentId] = score;
+      agentHistory[agentId] = Array(GRAPH_POINTS).fill(0);
+      AGENT_COLORS[agentId] = customColor;
+      agentChart.data.datasets.push({
+        label: agentId,
+        data: [...agentHistory[agentId]],
+        borderColor: customColor,
+        backgroundColor: customColor+'18',
+        borderWidth: 1.5,
+        pointRadius: 0,
+        tension: 0.4,
+        fill: false,
+      });
+    }
+  }
+
+  // Start the decay ticker — runs regardless of WS activity (keeps flatlines alive)
+  setInterval(graphDecayTick, 800);
+
+  // ── END GRAPH ENGINE ───────────────────────────────────────────────────────
+
   // WS
   function connectWS(){
     const p=location.protocol==='https:'?'wss:':'ws:';
@@ -331,7 +470,9 @@
   function handle(msg){
     const{type,data}=msg;
     switch(type){
-      case 'thought': addThought(data); inc('sThoughts',++tTotal); document.getElementById('tcount').textContent=tTotal+' thoughts'; break;
+      case 'thought': addThought(data); inc('sThoughts',++tTotal); document.getElementById('tcount').textContent=tTotal+' thoughts';
+        graphSpikeAgent(data.agentId, data.type); // ← spike the ECG line
+        break;
       case 'portfolio_snapshot': case 'portfolio_update': updatePort(data); break;
       case 'swarm_initialized':
         addThought({type:'SUCCESS',agentId:'system',message:`✅ ${data.message} — ${data.agentCount} agents online`,timestamp:new Date().toISOString()});
@@ -340,11 +481,15 @@
       case 'heartbeat_cycle':
         inc('sBeats',++beats);
         if(data.cycleNumber) document.getElementById('tCycle').textContent=data.cycleNumber;
-        stepMission(); break;
+        stepMission();
+        // Spike all agents gently on heartbeat — shows the swarm is alive
+        if(data.agentId) graphSpikeAgent(data.agentId,'WAKE');
+        break;
       case 'dca_execution':
         inc('sTrades',++trades);
         const s=data.execution?.signature;
         addTx('SWAP',`💰 DCA | ${data.execution?.amountAcquired||'?'} tokens | ${s?`<a href="https://explorer.solana.com/tx/${s}?cluster=devnet" target="_blank">${s.slice(0,10)}...</a>`:''}`);
+        graphSpikeAgent('dca_agent_01','EXECUTE'); // big spike on trade
         refreshAll(); break;
       case 'governor_block':
         inc('sBlocked',++blocked); inc('gBlocked',++gBlocked);
@@ -354,10 +499,12 @@
         refreshAll(); break;
       case 'rug_blocked': case 'emergency_exit_required':
         inc('sRugs',++rugs);
-        addTx('RUG',`🚨 RUG BLOCKED — ${data.token||data.mint||'suspicious token'} | Score: ${data.score||'900+'}/1000`); break;
+        addTx('RUG',`🚨 RUG BLOCKED — ${data.token||data.mint||'suspicious token'} | Score: ${data.score||'900+'}/1000`);
+        graphSpikeAgent('risk_manager_01','ALERT'); break;
       case 'risk_halt':
         inc('sHalts',++halts);
-        addTx('HALT',`⛔ Risk Manager HALTED ${data.agentId||'?'} — ${data.reason||'high risk detected'}`); break;
+        addTx('HALT',`⛔ Risk Manager HALTED ${data.agentId||'?'} — ${data.reason||'high risk detected'}`);
+        graphSpikeAgent('risk_manager_01','EXECUTE'); break;
       case 'offramp_executed':
         addTx('OFFRAMP',`💸 Off-Ramp | ${data.amountSwept?.toFixed(4)||'?'} SOL → cold wallet | ${data.signature?.slice(0,10)||'demo'}...`); break;
       case 'governor_recall':

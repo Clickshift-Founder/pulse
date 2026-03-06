@@ -21,7 +21,7 @@ Body: { "role": "dca_agent|trailing_stop_agent|scout_agent|risk_manager", "agent
 Send any natural language command. The AI Orchestrator reasons and acts.
 ```
 POST /api/execute
-Headers: { "x-sentinel-secret": "<secret>", "Content-Type": "application/json" }
+Headers: { "x-pulse-secret": "<secret>", "Content-Type": "application/json" }
 Body: { "command": "Start DCA on BONK with 0.01 SOL every 5 minutes" }
 ```
 
