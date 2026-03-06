@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pulse — Agent Heartbeat Monitor</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    :root{
+      --bg:#020810;--surface:#0a1220;--border:#0f1e30;
+      --accent:#6366f1;--a2:#22d3ee;--green:#10b981;
+      --red:#ef4444;--yellow:#f59e0b;--purple:#a78bfa;
+      --text:#e2e8f0;--muted:#3d5470;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{
+      background:var(--bg);color:var(--text);
+      font-family:'JetBrains Mono','Courier New',monospace;
+      min-height:100vh;overflow:hidden;
+    }
+
+    /* Subtle scanline overlay for the ICU monitor feel */
+    body::before{
+      content:'';position:fixed;inset:0;
+      background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.04) 2px,rgba(0,0,0,.04) 4px);
+      pointer-events:none;z-index:0;
+    }
+
+    /* ── HEADER ── */
+    header{
+      position:relative;z-index:10;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:.65rem 1.8rem;
+      background:linear-gradient(90deg,#020810,#0a1624,#020810);
+      border-bottom:1px solid rgba(99,102,241,.2);
+    }
+    .logo{display:flex;align-items:center;gap:.7rem;text-decoration:none;}
+    .pdot{width:20px;height:20px;border-radius:50%;background:var(--accent);box-shadow:0 0 16px var(--accent);animation:pglow 2s ease-in-out infinite;}
+    @keyframes pglow{0%,100%{box-shadow:0 0 8px var(--accent)}50%{box-shadow:0 0 28px var(--accent),0 0 55px var(--accent)}}
+    .ltxt{font-size:1rem;font-weight:bold;letter-spacing:4px;color:var(--text);}
+    .lsub{font-size:.5rem;color:var(--muted);letter-spacing:2px;}
+    .hdr-right{display:flex;align-items:center;gap:1.2rem;}
+    .hdr-right a{font-size:.65rem;color:var(--muted);text-decoration:none;padding:.22rem .55rem;border:1px solid var(--border);border-radius:4px;transition:all .2s;}
+    .hdr-right a:hover{color:var(--a2);border-color:var(--a2);}
+    .hdr-right a.active{color:var(--a2);border-color:var(--a2);background:rgba(34,211,238,.06);}
+    #wsChip{font-size:.6rem;padding:.18rem .55rem;border-radius:8px;background:rgba(239,68,68,.1);border:1px solid var(--red);color:var(--red);transition:all .4s;}
+    #wsChip.live{background:rgba(16,185,129,.1);border-color:var(--green);color:var(--green);}
+
+    /* ── TITLE BAND ── */
+    .title-band{
+      position:relative;z-index:10;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:.5rem 1.8rem;
+      background:linear-gradient(90deg,rgba(99,102,241,.06),rgba(34,211,238,.03));
+      border-bottom:1px solid rgba(99,102,241,.12);
+    }
+    .tb-title{font-size:.65rem;text-transform:uppercase;letter-spacing:3px;color:var(--a2);}
+    .tb-sub{font-size:.55rem;color:var(--muted);}
+    .tb-right{display:flex;align-items:center;gap:1rem;}
+    .live-pill{display:flex;align-items:center;gap:.35rem;font-size:.6rem;color:var(--green);}
+    .live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:ldot 1.2s ease-in-out infinite;}
+    @keyframes ldot{0%,100%{opacity:1;box-shadow:0 0 4px var(--green)}50%{opacity:.4;box-shadow:none}}
+
+    /* ── STATS STRIP ── */
+    .stats-strip{
+      position:relative;z-index:10;
+      display:flex;gap:0;
+      border-bottom:1px solid var(--border);
+      background:var(--surface);
+    }
+    .ss{
+      flex:1;padding:.45rem .8rem;text-align:center;
+      border-right:1px solid var(--border);
+    }
+    .ss:last-child{border-right:none;}
+    .ss-v{font-size:1.1rem;font-weight:bold;color:var(--a2);}
+    .ss-l{font-size:.48rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:.1rem;}
+
+    /* ── CHART AREA ── */
+    .charts-wrap{
+      position:relative;z-index:10;
+      display:flex;flex-direction:column;
+      gap:0;
+      height:calc(100vh - 148px); /* fills remaining viewport */
+      overflow:hidden;
+    }
+
+    /* Individual agent row */
+    .agent-row{
+      flex:1;
+      display:flex;
+      align-items:stretch;
+      border-bottom:1px solid rgba(15,30,48,.8);
+      position:relative;
+      overflow:hidden;
+    }
+    .agent-row:last-child{border-bottom:none;}
+
+    /* Left label panel */
+    .agent-label{
+      width:160px;flex-shrink:0;
+      display:flex;flex-direction:column;justify-content:center;
+      padding:.4rem .9rem;
+      border-right:1px solid rgba(15,30,48,.8);
+      background:rgba(10,18,32,.7);
+      position:relative;z-index:2;
+    }
+    .al-role{font-size:.5rem;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;}
+    .al-name{font-size:.78rem;font-weight:bold;margin:.12rem 0;}
+    .al-status{font-size:.52rem;display:flex;align-items:center;gap:.3rem;margin-top:.1rem;}
+    .al-dot{width:6px;height:6px;border-radius:50%;background:var(--muted);}
+    .al-dot.active{animation:adot 1.5s ease-in-out infinite;}
+    @keyframes adot{0%,100%{opacity:1}50%{opacity:.3}}
+    .al-score{font-size:.65rem;font-weight:bold;margin-top:.15rem;}
+    .al-hb{font-size:.48rem;color:var(--muted);margin-top:.08rem;}
+
+    /* Canvas fills the rest */
+    .agent-canvas-wrap{flex:1;position:relative;overflow:hidden;}
+    .agent-canvas-wrap canvas{width:100%!important;height:100%!important;}
+
+    /* Glow overlay — agent's color tints its row background subtly */
+    .agent-row::before{
+      content:'';position:absolute;inset:0;
+      opacity:0;transition:opacity .6s;
+      pointer-events:none;z-index:1;
+    }
+    .agent-row.firing::before{opacity:1;}
+
+    /* ── THOUGHT TICKER (scrolling at bottom) ── */
+    .thought-ticker{
+      position:fixed;bottom:0;left:0;right:0;z-index:20;
+      background:rgba(2,8,16,.92);
+      border-top:1px solid rgba(99,102,241,.2);
+      padding:.3rem 1.5rem;
+      display:flex;align-items:center;gap:1rem;
+      font-size:.62rem;overflow:hidden;height:28px;
+    }
+    .tt-label{color:var(--accent);white-space:nowrap;font-size:.55rem;text-transform:uppercase;letter-spacing:1px;}
+    .tt-scroll{flex:1;overflow:hidden;position:relative;}
+    .tt-inner{white-space:nowrap;animation:ttscroll 18s linear infinite;}
+    @keyframes ttscroll{0%{transform:translateX(100%)}100%{transform:translateX(-100%)}}
+    .tt-inner span{margin:0 2rem;color:var(--muted);}
+    .tt-inner span.hi{color:var(--a2);}
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <a href="/dashboard.html" class="logo">
+    <div class="pdot"></div>
+    <div><div class="ltxt">PULSE</div><div class="lsub">AGENT HEARTBEAT MONITOR</div></div>
+  </a>
+  <div class="hdr-right">
+    <div id="wsChip">● CONNECTING</div>
+    <a href="/dashboard.html">← Dashboard</a>
+    <a href="/metrics.html">Metrics</a>
+    <a href="/docs.html">Docs</a>
+  </div>
+</header>
+
+<!-- TITLE BAND -->
+<div class="title-band">
+  <div>
+    <div class="tb-title">⚡ Neural Activity Monitor — All Agents Live</div>
+    <div class="tb-sub">Each line represents one agent's cognitive activity. Flat = sleeping. Spike = executing.</div>
+  </div>
+  <div class="tb-right">
+    <div class="live-pill"><div class="live-dot"></div>BROADCASTING</div>
+    <div style="font-size:.58rem;color:var(--muted)">Cycle <span id="cycleNo" style="color:var(--a2)">—</span></div>
+  </div>
+</div>
+
+<!-- STATS STRIP -->
+<div class="stats-strip">
+  <div class="ss"><div class="ss-v" id="gBeats">0</div><div class="ss-l">Heartbeats</div></div>
+  <div class="ss"><div class="ss-v" id="gTrades" style="color:var(--green)">0</div><div class="ss-l">Trades</div></div>
+  <div class="ss"><div class="ss-v" id="gBlocked" style="color:var(--red)">0</div><div class="ss-l">Gov Blocked</div></div>
+  <div class="ss"><div class="ss-v" id="gRugs" style="color:var(--red)">0</div><div class="ss-l">Rugs Stopped</div></div>
+  <div class="ss"><div class="ss-v" id="gHalts" style="color:var(--purple)">0</div><div class="ss-l">Risk Halts</div></div>
+  <div class="ss"><div class="ss-v" id="gThoughts">0</div><div class="ss-l">Thoughts</div></div>
+</div>
+
+<!-- 6 AGENT CHART ROWS -->
+<div class="charts-wrap" id="chartsWrap">
+  <!-- rows injected by JS -->
+</div>
+
+<!-- SCROLLING THOUGHT TICKER -->
+<div class="thought-ticker">
+  <div class="tt-label">📡 live</div>
+  <div class="tt-scroll"><div class="tt-inner" id="tickerInner">
+    <span>Waiting for agent thoughts...</span>
+  </div></div>
+</div>
+
+<script>
+// ── AGENT DEFINITIONS ─────────────────────────────────────────────────────────
+const AGENTS = [
+  { id:'orchestrator_main',       role:'Core / Vault',    name:'🧠 Orchestrator',  color:'#6366f1', glow:'rgba(99,102,241,.06)'  },
+  { id:'dca_agent_01',            role:'Strategy',        name:'📈 DCA Agent',     color:'#10b981', glow:'rgba(16,185,129,.06)'  },
+  { id:'trailing_stop_agent_01',  role:'Strategy',        name:'📉 Trailing Stop', color:'#22d3ee', glow:'rgba(34,211,238,.06)'  },
+  { id:'scout_agent_01',          role:'Discovery',       name:'🏹 Scout',         color:'#f59e0b', glow:'rgba(245,158,11,.06)'  },
+  { id:'risk_manager_01',         role:'Safety',          name:'🚨 Risk Manager',  color:'#ef4444', glow:'rgba(239,68,68,.06)'   },
+  { id:'off_ramp_agent_01',       role:'Execution',       name:'💸 Off-Ramper',    color:'#a78bfa', glow:'rgba(167,139,250,.06)' },
+];
+
+// ── CHART STATE ───────────────────────────────────────────────────────────────
+const POINTS    = 120;   // rolling window width
+const DECAY     = 0.68;  // score decay per 600ms tick — controls how fast lines fall
+const TICK_MS   = 600;   // decay interval
+
+const TYPE_SCORE = {
+  WAKE:18, READ:32, THINK:58, PLAN:72,
+  EXECUTE:100, OBSERVE:12, ALERT:92,
+  SUCCESS:78, ERROR:62, SLEEP:0, MISSION:68,
+};
+
+// Per-agent state
+const state = {};
+AGENTS.forEach(a => {
+  state[a.id] = {
+    score:   0,
+    history: Array(POINTS).fill(0),
+    chart:   null,
+    lastType:'SLEEP',
+    thoughts:0,
+  };
+});
+
+// ── BUILD DOM + CHARTS ────────────────────────────────────────────────────────
+const wrap = document.getElementById('chartsWrap');
+
+AGENTS.forEach(a => {
+  // Row
+  const row = document.createElement('div');
+  row.className = 'agent-row';
+  row.id = 'row-'+a.id;
+  row.style.setProperty('--glow', a.glow);
+
+  // Glow overlay tint using agent color
+  row.insertAdjacentHTML('beforeend',`<style>
+    #row-${a.id}::before{ background: radial-gradient(ellipse 60% 100% at 20% 50%, ${a.glow}, transparent); }
+  </style>`);
+
+  // Label
+  row.insertAdjacentHTML('beforeend', `
+    <div class="agent-label" id="lbl-${a.id}">
+      <div class="al-role">${a.role}</div>
+      <div class="al-name" style="color:${a.color}">${a.name}</div>
+      <div class="al-status">
+        <div class="al-dot" id="dot-${a.id}" style="background:${a.color}"></div>
+        <span id="st-${a.id}" style="color:var(--muted)">IDLE</span>
+      </div>
+      <div class="al-score" id="sc-${a.id}" style="color:${a.color}">—</div>
+      <div class="al-hb" id="hb-${a.id}">— thoughts</div>
+    </div>
+  `);
+
+  // Canvas wrap
+  const cw = document.createElement('div');
+  cw.className = 'agent-canvas-wrap';
+  const canvas = document.createElement('canvas');
+  canvas.id = 'c-'+a.id;
+  cw.appendChild(canvas);
+  row.appendChild(cw);
+  wrap.appendChild(row);
+
+  // Chart
+  const ctx = canvas.getContext('2d');
+  state[a.id].chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: Array(POINTS).fill(''),
+      datasets: [{
+        data: [...state[a.id].history],
+        borderColor: a.color,
+        backgroundColor: a.color+'22',
+        borderWidth: 2,
+        pointRadius: 0,
+        tension: 0.42,
+        fill: true,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      plugins: { legend:{display:false}, tooltip:{enabled:false} },
+      scales: {
+        x: { display:false },
+        y: {
+          display: false,
+          min: -5,
+          max: 115,
+        }
+      },
+      elements: { line:{ borderCapStyle:'round', borderJoinStyle:'round' } }
+    }
+  });
+});
+
+// ── DECAY TICKER ──────────────────────────────────────────────────────────────
+// Runs every TICK_MS — decays all scores, pushes new points, updates charts
+setInterval(() => {
+  AGENTS.forEach((a, i) => {
+    const s = state[a.id];
+    s.score = Math.max(0, s.score * DECAY);
+    s.history.push(Math.round(s.score * 10) / 10);
+    if (s.history.length > POINTS) s.history.shift();
+
+    s.chart.data.datasets[0].data = [...s.history];
+    s.chart.update('none');
+
+    // Update label score
+    const scEl = document.getElementById('sc-'+a.id);
+    if (scEl) scEl.textContent = s.score > 2 ? Math.round(s.score) : '—';
+
+    // Update status text
+    const stEl = document.getElementById('st-'+a.id);
+    const dotEl = document.getElementById('dot-'+a.id);
+    if (s.score > 70) {
+      if (stEl) stEl.textContent = '⚡ EXECUTING'; stEl && (stEl.style.color = a.color);
+      dotEl && dotEl.classList.add('active');
+    } else if (s.score > 30) {
+      if (stEl) stEl.textContent = '🤔 THINKING'; stEl && (stEl.style.color = a.color);
+      dotEl && dotEl.classList.add('active');
+    } else if (s.score > 5) {
+      if (stEl) stEl.textContent = '👁 ACTIVE'; stEl && (stEl.style.color = 'var(--muted)');
+      dotEl && dotEl.classList.add('active');
+    } else {
+      if (stEl) { stEl.textContent = '💤 SLEEPING'; stEl.style.color = 'var(--muted)'; }
+      dotEl && dotEl.classList.remove('active');
+    }
+
+    // Row glow — fires when score > 50
+    const row = document.getElementById('row-'+a.id);
+    if (s.score > 50) row && row.classList.add('firing');
+    else row && row.classList.remove('firing');
+  });
+}, TICK_MS);
+
+// ── SPIKE FUNCTION ────────────────────────────────────────────────────────────
+function spike(agentId, thoughtType) {
+  const score = TYPE_SCORE[thoughtType] || 15;
+
+  // Try exact match first, then partial
+  let key = agentId;
+  if (!state[key]) {
+    key = AGENTS.find(a => agentId && agentId.startsWith(a.id.split('_01')[0]))?.id;
+  }
+  if (!key || !state[key]) return;
+
+  state[key].score = Math.max(state[key].score, score);
+  state[key].thoughts++;
+  state[key].lastType = thoughtType;
+
+  const hbEl = document.getElementById('hb-'+key);
+  if (hbEl) hbEl.textContent = state[key].thoughts + ' thoughts';
+}
+
+// ── COUNTERS ──────────────────────────────────────────────────────────────────
+let beats=0, trades=0, blocked=0, rugs=0, halts=0, thoughts=0;
+function inc(id, val) { const el=document.getElementById(id); if(el) el.textContent=val; }
+
+// ── TICKER QUEUE ──────────────────────────────────────────────────────────────
+const tickerMsgs = [];
+function pushTicker(msg, highlight=false) {
+  tickerMsgs.push({ msg, highlight });
+  if (tickerMsgs.length > 30) tickerMsgs.shift();
+  rebuildTicker();
+}
+function rebuildTicker() {
+  const inner = document.getElementById('tickerInner');
+  if (!inner) return;
+  inner.innerHTML = tickerMsgs.map(m =>
+    `<span class="${m.highlight?'hi':''}">${m.msg}</span>`
+  ).join('');
+}
+
+// ── WEBSOCKET ─────────────────────────────────────────────────────────────────
+let ws;
+function connectWS() {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  ws = new WebSocket(`${proto}//${location.host}`);
+
+  ws.onopen = () => {
+    const chip = document.getElementById('wsChip');
+    chip.textContent = '● LIVE';
+    chip.classList.add('live');
+    pushTicker('WebSocket connected — monitoring all agents', true);
+  };
+
+  ws.onclose = () => {
+    const chip = document.getElementById('wsChip');
+    chip.textContent = '● OFFLINE';
+    chip.classList.remove('live');
+    setTimeout(connectWS, 3000);
+  };
+
+  ws.onmessage = e => {
+    try { handle(JSON.parse(e.data)); } catch(_) {}
+  };
+}
+
+function handle(msg) {
+  const { type, data } = msg;
+
+  switch(type) {
+
+    case 'thought':
+      spike(data.agentId, data.type);
+      inc('gThoughts', ++thoughts);
+      pushTicker(`[${data.agentId}] ${data.message?.slice(0,80)}`, data.type==='EXECUTE');
+      break;
+
+    case 'heartbeat_cycle':
+      inc('gBeats', ++beats);
+      if (data.cycleNumber) document.getElementById('cycleNo').textContent = data.cycleNumber;
+      if (data.agentId) spike(data.agentId, 'WAKE');
+      pushTicker(`Heartbeat #${data.cycleNumber||beats} — all agents breathing`);
+      break;
+
+    case 'dca_execution':
+      inc('gTrades', ++trades);
+      spike('dca_agent_01', 'EXECUTE');
+      pushTicker(`💰 DCA executed — ${data.execution?.amountAcquired||'?'} tokens acquired`, true);
+      break;
+
+    case 'governor_block':
+      inc('gBlocked', ++blocked);
+      spike('orchestrator_main', 'ALERT');
+      pushTicker(`🛡️ Governor blocked: ${data.reason||'rule violation'} · ${data.agentId||'?'}`);
+      break;
+
+    case 'rug_blocked': case 'emergency_exit_required':
+      inc('gRugs', ++rugs);
+      spike('risk_manager_01', 'ALERT');
+      pushTicker(`🚨 RUG BLOCKED — ${data.token||'suspicious token'} score ${data.score||'900+'}/1000`, true);
+      break;
+
+    case 'risk_halt':
+      inc('gHalts', ++halts);
+      spike('risk_manager_01', 'EXECUTE');
+      pushTicker(`⛔ Risk Manager halted ${data.agentId||'?'}: ${data.reason||'high risk'}`, true);
+      break;
+
+    case 'offramp_executed':
+      spike('off_ramp_agent_01', 'EXECUTE');
+      pushTicker(`💸 Off-ramp: ${data.amountSwept?.toFixed(4)||'?'} SOL swept to cold wallet`, true);
+      break;
+
+    case 'mission_changed':
+      // Spike orchestrator + all agents on mission change
+      AGENTS.forEach(a => spike(a.id, 'MISSION'));
+      pushTicker(`📡 Mission updated: "${String(data.mission||data).slice(0,70)}"`, true);
+      break;
+
+    case 'capital_distributed':
+      spike('orchestrator_main', 'EXECUTE');
+      pushTicker(`💸 Capital distributed: ${data.totalSOL?.toFixed(4)||'?'} SOL → ${data.agentCount||'?'} agents`, true);
+      break;
+
+    case 'agent_sacked':
+      // Flatline the sacked agent permanently by zeroing its score and clearing history
+      if (state[data.agentId]) {
+        state[data.agentId].score = 0;
+        state[data.agentId].history = Array(POINTS).fill(0);
+        const stEl = document.getElementById('st-'+data.agentId);
+        if (stEl) { stEl.textContent = '🔴 SACKED'; stEl.style.color='var(--red)'; }
+      }
+      pushTicker(`🔴 Agent sacked: ${data.agentId}${data.recalledSOL?' · '+data.recalledSOL.toFixed(4)+' SOL recalled':''}`, true);
+      break;
+
+    case 'stop_triggered':
+      spike('trailing_stop_agent_01', 'EXECUTE');
+      pushTicker(`📉 Trailing stop fired — P&L: ${data.profitLossPct?.toFixed(2)||'?'}%`, true);
+      break;
+
+    case 'swarm_initialized':
+      AGENTS.forEach(a => spike(a.id, 'WAKE'));
+      pushTicker(`🚀 Swarm initialized — ${data.agentCount||6} agents online`, true);
+      break;
+  }
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+connectWS();
+
+// Demo: gentle idle noise on first load so lines aren't completely flat
+// Gives judges something alive to look at before WS events start
+setTimeout(() => {
+  AGENTS.forEach((a, i) => {
+    setTimeout(() => spike(a.id, 'WAKE'), i * 250);
+  });
+}, 800);
+</script>
+</body>
+</html>

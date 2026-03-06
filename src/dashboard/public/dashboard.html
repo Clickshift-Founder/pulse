@@ -38,7 +38,7 @@
     .sv{font-size:1.2rem;font-weight:bold;color:var(--a2);}
     .sl{font-size:.52rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:.15rem;}
 
-    /* GRID */
+    /* GRID — leave as-is */
     .grid{display:grid;grid-template-columns:290px 1fr 310px;height:calc(100vh - 155px);}
     @media(max-width:900px){.grid{grid-template-columns:1fr;height:auto;}}
 
@@ -194,6 +194,7 @@
     <div id="wsStatus">● CONNECTING</div>
     <div class="nav">
       <a href="/">Home</a>
+      <a href="graph.html" style="color:var(--a2);border-color:rgba(34,211,238,.3)">⚡ Live Graph</a>
       <a href="metrics.html">Metrics</a>
       <a href="docs.html">Docs</a>
     </div>
@@ -223,6 +224,8 @@
   <div class="sc"><div class="sv" id="sHalts" style="color:var(--purple)">0</div><div class="sl">Risk Halts</div></div>
   <div class="sc"><div class="sv" id="sThoughts">0</div><div class="sl">Thoughts</div></div>
 </div>
+
+<!-- AGENT HEARTBEAT GRAPH - now on dedicated page: graph.html -->
 
 <div class="grid">
 
