@@ -199,7 +199,7 @@
 const AGENTS = [
   { id:'orchestrator_main',       role:'Core / Vault',    name:'🧠 Orchestrator',  color:'#6366f1', glow:'rgba(99,102,241,.06)'  },
   { id:'dca_agent_01',            role:'Strategy',        name:'📈 DCA Agent',     color:'#10b981', glow:'rgba(16,185,129,.06)'  },
-  { id:'trailing_stop_agent_01',  role:'Strategy',        name:'📉 Trailing Stop', color:'#22d3ee', glow:'rgba(34,211,238,.06)'  },
+  { id:'trailing_agent_01',        role:'Strategy',        name:'📉 Trailing Stop', color:'#22d3ee', glow:'rgba(34,211,238,.06)'  },
   { id:'scout_agent_01',          role:'Discovery',       name:'🏹 Scout',         color:'#f59e0b', glow:'rgba(245,158,11,.06)'  },
   { id:'risk_manager_01',         role:'Safety',          name:'🚨 Risk Manager',  color:'#ef4444', glow:'rgba(239,68,68,.06)'   },
   { id:'off_ramp_agent_01',       role:'Execution',       name:'💸 Off-Ramper',    color:'#a78bfa', glow:'rgba(167,139,250,.06)' },
@@ -473,7 +473,7 @@ function handle(msg) {
       break;
 
     case 'stop_triggered':
-      spike('trailing_stop_agent_01', 'EXECUTE');
+      spike('trailing_agent_01', 'EXECUTE');
       pushTicker(`📉 Trailing stop fired — P&L: ${data.profitLossPct?.toFixed(2)||'?'}%`, true);
       break;
 

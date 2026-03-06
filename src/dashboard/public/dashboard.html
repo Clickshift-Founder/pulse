@@ -439,7 +439,7 @@
       const isVault=a.agentId==='orchestrator_main';
       const isProt=PROTECTED.includes(a.agentId);
       const xurl=`https://explorer.solana.com/address/${a.publicKey||''}?cluster=devnet`;
-      return `<div class="ac ${a.active?'active':''} ${a.heartbeatActive?'hb':''} ${isVault?'vault-card':''}" id="c-${a.agentId}">
+      return `<div class="ac ${a.active?'active':''} ${a.heartbeatActive?'hb':''} ${isVault?'vault-card':''}" id="c-${a.agentId}" data-pubkey="${a.publicKey||''}">
         <div class="atop">
           <div><div class="an">${ROLE_ICONS[a.role]||'🤖'} ${a.agentId}</div><div class="ar">${a.role}${isVault?' · VAULT':''}</div></div>
           <div class="ab">${(a.balance||0).toFixed(5)}<br/><span style="font-size:.52rem;color:var(--muted)">SOL</span></div>
@@ -540,11 +540,59 @@
     if(!pendingSack) return;
     try{
       const d=await(await fetch(`/api/agents/${pendingSack}/sack`,{method:'DELETE'})).json();
-      addTx('SACK',`🔴 ${pendingSack} sacked${d.recalledSOL?` | ${d.recalledSOL.toFixed(4)} SOL → vault`:''}`);
-      const c=document.getElementById(`c-${pendingSack}`);
-      if(c){ c.classList.add('sacked'); setTimeout(()=>c.remove(),1800); }
+      const recalled=d.recalledSOL||0;
+      addTx('SACK',`🔴 ${pendingSack} sacked${recalled?` | ${recalled.toFixed(4)} SOL → vault`:' | wallet empty'}`);
+
+      // Move card to sacked graveyard — don't delete it
+      const card=document.getElementById(`c-${pendingSack}`);
+      if(card){
+        card.classList.add('sacked');
+        // Swap action buttons for a view-wallet link
+        const btns=card.querySelector('.abts');
+        if(btns){
+          // Get wallet address from the explorer link if present
+          const pubkey=card.dataset?.pubkey||'';
+          btns.innerHTML=pubkey
+            ? `<a class="ab" style="color:var(--muted);border-color:var(--muted);text-decoration:none;font-size:.55rem;padding:.18rem .4rem;border:1px solid;border-radius:3px;" href="https://explorer.solana.com/address/${pubkey}?cluster=devnet" target="_blank">🔗 View Wallet</a>`
+            : `<span style="font-size:.55rem;color:var(--red)">🔴 SACKED</span>`;
+        }
+        // Add recalled badge
+        const badge=document.createElement('div');
+        badge.style.cssText='font-size:.52rem;color:var(--red);margin-top:.2rem;';
+        badge.textContent=recalled?`↩ ${recalled.toFixed(4)} SOL returned to vault`:'Wallet empty at termination';
+        card.appendChild(badge);
+
+        // Move to graveyard section
+        const graveyard=getOrCreateGraveyard();
+        graveyard.appendChild(card);
+      }
     }catch(e){ addTx('BLOCK',`Sack failed: ${e.message}`); }
     pendingSack=null; refreshAll();
+  }
+
+  function getOrCreateGraveyard(){
+    let g=document.getElementById('agentGraveyard');
+    if(!g){
+      const section=document.createElement('div');
+      section.style.cssText='flex-shrink:0;border-top:1px solid var(--border);';
+      section.innerHTML=`
+        <div class="ptitle" style="cursor:pointer" onclick="toggleGraveyard()">
+          <span>🔴 Sacked Agents</span>
+          <span id="graveBadge" style="color:var(--red);font-size:.58rem">▲</span>
+        </div>
+        <div id="agentGraveyard" style="padding:.4rem;"></div>`;
+      document.querySelector('.pl').appendChild(section);
+      g=document.getElementById('agentGraveyard');
+    }
+    return g;
+  }
+  function toggleGraveyard(){
+    const g=document.getElementById('agentGraveyard');
+    const b=document.getElementById('graveBadge');
+    if(!g) return;
+    const hidden=g.style.display==='none';
+    g.style.display=hidden?'':'none';
+    if(b) b.textContent=hidden?'▲':'▼';
   }
 
   // COMMAND
