@@ -286,7 +286,7 @@
   <div class="pr">
     <div class="cmd-hdr"><span>🧠 Command Centre</span><span style="color:var(--a2)">→ Orchestrator AI</span></div>
     <div class="qcmds">
-      <button class="qc" style="background:rgba(99,102,241,.15);border-color:rgba(99,102,241,.4);color:var(--accent)" onclick="awaken()">🌅 GM — Wake All Agents</button>
+      <button id="awakenBtn" class="qc" style="background:rgba(99,102,241,.08);border-color:rgba(99,102,241,.3);color:var(--accent)" onclick="awaken()">🌅 GM — Wake All Agents</button>
       <button class="qc" onclick="cmd('Portfolio status and current P&L')">📊 Status</button>
       <button class="qc" onclick="cmd('Change mission: maximize BONK position this week aggressively')">🎯 Mission: BONK</button>
       <button class="qc" onclick="cmd('Change mission: conservative mode — protect capital, stop new buys, hold positions')">🛡️ Mission: Protect</button>
@@ -641,11 +641,36 @@
 
   // AWAKEN — fires the dramatic opening sequence on demand
   async function awaken(){
-    addTx('CREATE','🌅 Sending GM to all agents — awakening sequence starting...');
-    try{
-      await fetch('/api/demo/awaken',{method:'POST'});
-      addTx('CREATE','✅ Awakening sequence running — watch the thought stream');
-    }catch(e){ addTx('BLOCK','Awaken error: '+e.message); }
+    const btn = document.getElementById('awakenBtn');
+    if (!btn) return;
+
+    // Visual feedback: button goes bright + disabled while running
+    btn.disabled = true;
+    btn.textContent = '⏳ Waking agents...';
+    btn.style.background = 'rgba(99,102,241,.35)';
+    btn.style.color = '#fff';
+
+    addTx('CREATE', '🌅 GM sent to all agents — watch the thought stream now...');
+
+    try {
+      const d = await (await fetch('/api/demo/awaken', { method: 'POST' })).json();
+      addTx('CREATE', '✅ Awakening sequence running — 12 seconds of agent drama incoming');
+
+      // The sequence runs for ~12 seconds — re-enable after it finishes
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.textContent = '🌅 GM — Wake All Agents';
+        btn.style.background = 'rgba(99,102,241,.08)';
+        btn.style.color = 'var(--accent)';
+      }, 13000);
+
+    } catch(e) {
+      addTx('BLOCK', 'Awaken error: ' + e.message);
+      btn.disabled = false;
+      btn.textContent = '🌅 GM — Wake All Agents';
+      btn.style.background = 'rgba(99,102,241,.08)';
+      btn.style.color = 'var(--accent)';
+    }
   }
 
   // PROVE ON-CHAIN — real devnet transactions, real explorer links
