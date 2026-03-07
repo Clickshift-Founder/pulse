@@ -286,6 +286,7 @@
   <div class="pr">
     <div class="cmd-hdr"><span>🧠 Command Centre</span><span style="color:var(--a2)">→ Orchestrator AI</span></div>
     <div class="qcmds">
+      <button class="qc" style="background:rgba(99,102,241,.15);border-color:rgba(99,102,241,.4);color:var(--accent)" onclick="awaken()">🌅 GM — Wake All Agents</button>
       <button class="qc" onclick="cmd('Portfolio status and current P&L')">📊 Status</button>
       <button class="qc" onclick="cmd('Change mission: maximize BONK position this week aggressively')">🎯 Mission: BONK</button>
       <button class="qc" onclick="cmd('Change mission: conservative mode — protect capital, stop new buys, hold positions')">🛡️ Mission: Protect</button>
@@ -636,6 +637,15 @@
       if(c.toLowerCase().includes('mission')||c.toLowerCase().includes('change')) setTimeout(refreshMission,1000);
     }catch(e){ document.getElementById('air').textContent='Error: '+e.message; }
     btn.disabled=false;
+  }
+
+  // AWAKEN — fires the dramatic opening sequence on demand
+  async function awaken(){
+    addTx('CREATE','🌅 Sending GM to all agents — awakening sequence starting...');
+    try{
+      await fetch('/api/demo/awaken',{method:'POST'});
+      addTx('CREATE','✅ Awakening sequence running — watch the thought stream');
+    }catch(e){ addTx('BLOCK','Awaken error: '+e.message); }
   }
 
   // PROVE ON-CHAIN — real devnet transactions, real explorer links

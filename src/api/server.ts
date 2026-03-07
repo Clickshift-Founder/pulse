@@ -28,6 +28,7 @@ import { metricsEngine } from "../agent/MetricsEngine";
 import { AgentFactory, ROLE_REGISTRY } from "../agent/AgentFactory";
 import { UserTier } from "../agent/UserSession";
 import { SimulationEngine } from "../agent/SimulationEngine";
+import { runAwakeningSequence, PERSONALITIES, getWorkingThought, getMarketCommentary, getSleepThought, getInterAgentMessage } from "../heartbeat/AgentPersonality";
 
 dotenv.config();
 
@@ -147,6 +148,10 @@ async function initializeSwarm() {
   initialized = true;
 
   broadcast("swarm_initialized", { message: "Pulse swarm online. All agents breathing.", agentCount: 6 });
+
+  // Fire awakening sequence — agents greet each other and brief the day
+  const solPrice = await jupiter.getPrice(TOKENS.SOL).catch(() => 178.50);
+  setTimeout(() => runAwakeningSequence(solPrice), 1500);
 
   console.log(`\n  Vault/Orchestrator: ${orchWallet.publicKeyString}`);
   console.log(`  DCA Agent:          ${dcaWallet.publicKeyString}`);
@@ -700,7 +705,73 @@ app.get("/api/proof/wallets", async (_req, res) => {
   }
 });
 
-// ─── Revive — re-register a sacked agent back into the active swarm ──────────
+// ─── Manual Awakening — fire the dramatic opening on demand ──────────────────
+
+app.post("/api/demo/awaken", async (_req, res) => {
+  try {
+    const solPrice = await jupiter.getPrice(TOKENS.SOL).catch(() => 178.50);
+    runAwakeningSequence(solPrice); // don't await — streams to WS live
+    res.json({ success: true, message: "Awakening sequence started — watch the thought stream" });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Personality heartbeat — fires rich inter-agent thoughts between cycles ───
+// Runs every 18 seconds — much more frequent than the 45-90s heartbeat cycles
+// Gives the thought stream continuous life between agent actions
+
+const AGENT_IDS = [
+  "orchestrator_main", "dca_agent_01", "trailing_agent_01",
+  "scout_agent_01", "risk_manager_01", "off_ramp_agent_01"
+];
+const INTER_AGENT_PAIRS: [string, string][] = [
+  ["orchestrator_main", "dca_agent_01"],
+  ["orchestrator_main", "risk_manager_01"],
+  ["dca_agent_01",      "risk_manager_01"],
+  ["scout_agent_01",    "risk_manager_01"],
+  ["scout_agent_01",    "orchestrator_main"],
+  ["risk_manager_01",   "dca_agent_01"],
+  ["off_ramp_agent_01", "orchestrator_main"],
+  ["trailing_agent_01", "orchestrator_main"],
+];
+
+let personalityTickCount = 0;
+setInterval(async () => {
+  if (!initialized) return;
+  personalityTickCount++;
+
+  try {
+    const solPrice = await jupiter.getPrice(TOKENS.SOL).catch(() => 178.50);
+
+    // Every tick: one agent emits a working thought
+    const agent = AGENT_IDS[personalityTickCount % AGENT_IDS.length];
+    const workThought = getWorkingThought(agent);
+    if (workThought) thoughtStream.think(agent, "OBSERVE", workThought);
+
+    // Every 2 ticks: market commentary from a different agent
+    if (personalityTickCount % 2 === 0) {
+      const commentAgent = AGENT_IDS[(personalityTickCount + 2) % AGENT_IDS.length];
+      const comment = getMarketCommentary(commentAgent, solPrice);
+      if (comment) thoughtStream.think(commentAgent, "THINK", comment);
+    }
+
+    // Every 3 ticks: an inter-agent message exchange
+    if (personalityTickCount % 3 === 0) {
+      const pair = INTER_AGENT_PAIRS[personalityTickCount % INTER_AGENT_PAIRS.length];
+      const msg = getInterAgentMessage(pair[0], pair[1]);
+      if (msg) {
+        thoughtStream.think(pair[0], "PLAN", `→ [to ${pair[1]}]: ${msg}`);
+        // Reply after a short delay
+        setTimeout(() => {
+          const reply = getInterAgentMessage(pair[1], pair[0]);
+          if (reply) thoughtStream.think(pair[1], "OBSERVE", `→ [to ${pair[0]}]: ${reply}`);
+        }, 1200 + Math.random() * 800);
+      }
+    }
+  } catch { /* don't let personality ticker crash anything */ }
+
+}, 18_000); // every 18 seconds
 
 app.post("/api/agents/:agentId/revive", async (req, res) => {
   const { agentId } = req.params;
