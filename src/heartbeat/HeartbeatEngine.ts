@@ -11,7 +11,6 @@
  *   "What is the risk?"
  *   → ACT or SLEEP
  *
- * Inspired by OpenClaw's Heartbeat Architecture.
  * This is the "Thinking Runtime" that blows minds.
  */
 
