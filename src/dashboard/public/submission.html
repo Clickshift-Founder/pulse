@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pulse — Agentic Wallet OS on Solana | Bounty Submission</title>
+<style>
+  :root {
+    --indigo: #4F46E5;
+    --indigo-light: #818CF8;
+    --cyan: #0891B2;
+    --green: #059669;
+    --red: #DC2626;
+    --amber: #D97706;
+    --dark: #0F172A;
+    --surface: #1E293B;
+    --border: #334155;
+    --muted: #94A3B8;
+    --text: #E2E8F0;
+    --bg: #0F172A;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Georgia', serif;
+    background: #FAFAFA;
+    color: #1A1A2E;
+    line-height: 1.75;
+  }
+
+  /* ── HERO ───────────────────────────────────────────── */
+  .hero {
+    background: linear-gradient(135deg, #0F172A 0%, #1E1B4B 50%, #0C1A3A 100%);
+    color: white;
+    padding: 5rem 2rem 4rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(99,102,241,.25) 0%, transparent 70%);
+  }
+  .hero-badge {
+    display: inline-block;
+    border: 1px solid rgba(99,102,241,.5);
+    background: rgba(99,102,241,.1);
+    color: #A5B4FC;
+    font-family: 'Arial', sans-serif;
+    font-size: .75rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    padding: .35rem 1rem;
+    border-radius: 2rem;
+    margin-bottom: 1.5rem;
+  }
+  .hero h1 {
+    font-family: 'Arial', sans-serif;
+    font-size: clamp(3rem, 8vw, 5.5rem);
+    font-weight: 900;
+    letter-spacing: -.03em;
+    background: linear-gradient(135deg, #fff 0%, #A5B4FC 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: .5rem;
+    position: relative;
+  }
+  .hero-sub {
+    font-family: 'Arial', sans-serif;
+    font-size: 1.25rem;
+    color: #94A3B8;
+    margin-bottom: 2.5rem;
+    position: relative;
+  }
+  .hero-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: .75rem;
+    margin-bottom: 2.5rem;
+    position: relative;
+  }
+  .hero-link {
+    font-family: 'Arial', sans-serif;
+    font-size: .82rem;
+    padding: .5rem 1.2rem;
+    border-radius: .4rem;
+    text-decoration: none;
+    border: 1px solid;
+    transition: all .2s;
+  }
+  .hero-link.primary {
+    background: #4F46E5;
+    border-color: #4F46E5;
+    color: white;
+  }
+  .hero-link.secondary {
+    background: transparent;
+    border-color: rgba(99,102,241,.4);
+    color: #A5B4FC;
+  }
+  .hero-link:hover { opacity: .8; transform: translateY(-1px); }
+  .hero-meta {
+    font-family: 'Arial', sans-serif;
+    font-size: .78rem;
+    color: #475569;
+    position: relative;
+  }
+
+  /* ── LAYOUT ─────────────────────────────────────────── */
+  .container {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+  .section {
+    padding: 4rem 0 2rem;
+  }
+  .section + .section {
+    border-top: 1px solid #E5E7EB;
+  }
+
+  /* ── TYPOGRAPHY ─────────────────────────────────────── */
+  .section-label {
+    font-family: 'Arial', sans-serif;
+    font-size: .72rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: #4F46E5;
+    font-weight: 700;
+    margin-bottom: .75rem;
+  }
+  h2 {
+    font-family: 'Arial', sans-serif;
+    font-size: 2rem;
+    font-weight: 800;
+    color: #0F172A;
+    letter-spacing: -.025em;
+    margin-bottom: 1.25rem;
+    line-height: 1.25;
+  }
+  h3 {
+    font-family: 'Arial', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1E293B;
+    margin: 2rem 0 .75rem;
+  }
+  p {
+    color: #334155;
+    margin-bottom: 1.1rem;
+    font-size: 1.02rem;
+  }
+  strong { color: #0F172A; }
+  em { color: #475569; font-style: italic; }
+
+  /* ── CALLOUT BOXES ──────────────────────────────────── */
+  .callout {
+    border-radius: .6rem;
+    padding: 1.25rem 1.5rem;
+    margin: 1.75rem 0;
+    border-left: 4px solid;
+  }
+  .callout.indigo { background: #EEF2FF; border-color: #4F46E5; }
+  .callout.green  { background: #ECFDF5; border-color: #059669; }
+  .callout.cyan   { background: #ECFEFF; border-color: #0891B2; }
+  .callout.amber  { background: #FFFBEB; border-color: #D97706; }
+  .callout-label {
+    font-family: 'Arial', sans-serif;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    margin-bottom: .5rem;
+  }
+  .callout.indigo .callout-label { color: #4F46E5; }
+  .callout.green  .callout-label { color: #059669; }
+  .callout.cyan   .callout-label { color: #0891B2; }
+  .callout.amber  .callout-label { color: #D97706; }
+  .callout p { margin-bottom: 0; font-size: .95rem; }
+
+  /* ── CODE ───────────────────────────────────────────── */
+  code {
+    font-family: 'Courier New', monospace;
+    font-size: .875rem;
+    background: #F1F5F9;
+    color: #4F46E5;
+    padding: .1rem .4rem;
+    border-radius: .25rem;
+  }
+  .code-block {
+    background: #0F172A;
+    color: #E2E8F0;
+    border-radius: .6rem;
+    padding: 1.25rem 1.5rem;
+    margin: 1rem 0;
+    font-family: 'Courier New', monospace;
+    font-size: .85rem;
+    line-height: 1.6;
+    overflow-x: auto;
+  }
+  .code-block .comment { color: #64748B; }
+  .code-block .keyword { color: #A5B4FC; }
+  .code-block .string  { color: #6EE7B7; }
+  .code-block .fn      { color: #FCD34D; }
+
+  /* ── CRITERION ROWS ─────────────────────────────────── */
+  .criterion {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1rem;
+    align-items: start;
+    border: 1px solid #E5E7EB;
+    border-radius: .5rem;
+    padding: 1rem 1.25rem;
+    margin-bottom: .75rem;
+    background: #FAFAFA;
+  }
+  .criterion:hover { background: #F8FAFC; }
+  .criterion-text strong {
+    display: block;
+    font-family: 'Arial', sans-serif;
+    font-size: .95rem;
+    color: #0F172A;
+    margin-bottom: .25rem;
+  }
+  .criterion-text span { font-size: .88rem; color: #64748B; }
+  .criterion-badge {
+    font-family: 'Arial', sans-serif;
+    font-size: .78rem;
+    font-weight: 700;
+    padding: .3rem .75rem;
+    border-radius: 2rem;
+    white-space: nowrap;
+    margin-top: .15rem;
+  }
+  .badge-met   { background: #DCFCE7; color: #166534; }
+  .badge-extra { background: #DBEAFE; color: #1E40AF; }
+
+  /* ── AGENT TABLE ────────────────────────────────────── */
+  .agent-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+  .agent-card {
+    border: 1px solid #E5E7EB;
+    border-radius: .6rem;
+    padding: 1rem 1.15rem;
+    background: white;
+    transition: box-shadow .2s;
+  }
+  .agent-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.08); }
+  .agent-card .emoji { font-size: 1.6rem; margin-bottom: .4rem; }
+  .agent-card .name {
+    font-family: 'Arial', sans-serif;
+    font-weight: 700;
+    font-size: .9rem;
+    color: #0F172A;
+  }
+  .agent-card .hb {
+    font-family: 'Arial', sans-serif;
+    font-size: .7rem;
+    color: #059669;
+    font-weight: 700;
+    margin: .2rem 0 .5rem;
+  }
+  .agent-card .desc { font-size: .83rem; color: #64748B; line-height: 1.5; }
+
+  /* ── GOVERNOR TABLE ─────────────────────────────────── */
+  .gov-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.25rem 0;
+    font-family: 'Arial', sans-serif;
+    font-size: .875rem;
+  }
+  .gov-table th {
+    background: #0F172A;
+    color: white;
+    padding: .65rem 1rem;
+    text-align: left;
+    font-size: .78rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+  .gov-table th:first-child { border-radius: .4rem 0 0 0; }
+  .gov-table th:last-child  { border-radius: 0 .4rem 0 0; }
+  .gov-table td {
+    padding: .7rem 1rem;
+    border-bottom: 1px solid #F1F5F9;
+    color: #334155;
+    vertical-align: top;
+  }
+  .gov-table tr:nth-child(even) td { background: #F8FAFC; }
+  .gov-table .layer-num {
+    display: inline-block;
+    width: 1.5rem; height: 1.5rem;
+    background: #DCFCE7;
+    color: #166534;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 1.5rem;
+    font-weight: 700;
+    font-size: .78rem;
+  }
+
+  /* ── THOUGHT STREAM DEMO ────────────────────────────── */
+  .thought-demo {
+    background: #0F172A;
+    border-radius: .6rem;
+    padding: 1.25rem 1.5rem;
+    margin: 1.5rem 0;
+    font-family: 'Courier New', monospace;
+    font-size: .82rem;
+    line-height: 2;
+  }
+  .thought-demo .t-wake    { color: #818CF8; }
+  .thought-demo .t-read    { color: #C4B5FD; }
+  .thought-demo .t-think   { color: #FCD34D; }
+  .thought-demo .t-plan    { color: #67E8F9; }
+  .thought-demo .t-exec    { color: #6EE7B7; }
+  .thought-demo .t-success { color: #86EFAC; }
+  .thought-demo .t-agent   { color: #94A3B8; }
+
+  /* ── VISION SECTION ─────────────────────────────────── */
+  .vision-quote {
+    border-left: 4px solid #4F46E5;
+    padding: 1.5rem 2rem;
+    margin: 2rem 0;
+    background: #F8F9FF;
+    border-radius: 0 .6rem .6rem 0;
+  }
+  .vision-quote p {
+    font-size: 1.15rem;
+    font-style: italic;
+    color: #1E293B;
+    margin-bottom: 0;
+    line-height: 1.65;
+  }
+
+  /* ── LINKS SECTION ──────────────────────────────────── */
+  .link-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: .75rem;
+    margin: 1.25rem 0;
+  }
+  .link-card {
+    border: 1px solid #E5E7EB;
+    border-radius: .5rem;
+    padding: .85rem 1rem;
+    text-decoration: none;
+    background: white;
+    transition: all .2s;
+    display: block;
+  }
+  .link-card:hover {
+    border-color: #4F46E5;
+    box-shadow: 0 2px 8px rgba(79,70,229,.12);
+    transform: translateY(-1px);
+  }
+  .link-card .link-icon { font-size: 1.1rem; margin-bottom: .3rem; }
+  .link-card .link-label {
+    font-family: 'Arial', sans-serif;
+    font-size: .82rem;
+    font-weight: 700;
+    color: #0F172A;
+    margin-bottom: .1rem;
+  }
+  .link-card .link-url {
+    font-family: 'Courier New', monospace;
+    font-size: .72rem;
+    color: #4F46E5;
+    word-break: break-all;
+  }
+
+  /* ── UL / OL ────────────────────────────────────────── */
+  ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+  li { color: #334155; margin-bottom: .4rem; font-size: .98rem; }
+  li strong { color: #0F172A; }
+
+  /* ── FOOTER ─────────────────────────────────────────── */
+  .footer {
+    background: #0F172A;
+    color: #475569;
+    text-align: center;
+    padding: 3rem 2rem;
+    font-family: 'Arial', sans-serif;
+    font-size: .85rem;
+    margin-top: 5rem;
+  }
+  .footer strong { color: #94A3B8; }
+
+  /* ── PRINT ──────────────────────────────────────────── */
+  @media print {
+    .hero { background: #0F172A !important; -webkit-print-color-adjust: exact; }
+    .section { page-break-inside: avoid; }
+  }
+
+  @media (max-width: 600px) {
+    h2 { font-size: 1.5rem; }
+    .hero h1 { font-size: 3rem; }
+    .agent-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     HERO
+════════════════════════════════════════════════════════════════ -->
+<div class="hero">
+  <div class="hero-badge">Superteam Nigeria · DeFi Agentic Wallets Bounty · March 2026</div>
+  <h1>PULSE</h1>
+  <div class="hero-sub">The Agentic Wallet Operating System for Solana</div>
+  <div class="hero-links">
+    <a class="hero-link primary" href="https://pulse.clickshift.io/dashboard.html" target="_blank">🖥️ Live Dashboard</a>
+    <a class="hero-link secondary" href="https://pulse.clickshift.io/api/proof/wallets" target="_blank">📋 Wallet Proof</a>
+    <a class="hero-link secondary" href="https://pulse.clickshift.io/graph.html" target="_blank">⚡ Live Graph</a>
+    <a class="hero-link secondary" href="https://pulse.clickshift.io/docs.html" target="_blank">📄 Architecture Docs</a>
+  </div>
+  <div class="hero-meta">Built by Emmanuel · clickshift.io · Solo submission · Nigeria 🇳🇬</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     EXECUTIVE SUMMARY
+════════════════════════════════════════════════════════════════ -->
+<div class="container">
+<div class="section">
+  <div class="section-label">Executive Summary</div>
+  <h2>An AI swarm that manages your Solana portfolio so you don't have to.</h2>
+
+  <p>Pulse is not a trading bot. It is not a dashboard. It is the first <strong>Agentic Wallet Operating System</strong> built on Solana — a fully autonomous multi-agent swarm where each AI agent owns its own encrypted Solana wallet, signs transactions independently, reasons about the market using real AI, and coordinates with other agents to execute DeFi strategy — without any human intervention.</p>
+
+  <p>This bounty asked builders to demonstrate that AI agents can own wallets, sign transactions autonomously, hold assets, and interact with protocols. Pulse does not merely demonstrate this. It deploys <strong>six independent agents</strong> doing all of this simultaneously, continuously, and verifiably on Solana devnet, right now.</p>
+
+  <div class="callout indigo">
+    <div class="callout-label">The one-sentence version</div>
+    <p>Pulse is a living swarm of AI agents — each with a sovereign encrypted Solana wallet — that wake up every 45–90 seconds, reason about the market with Clickshift proprietary Intelligence, execute DeFi strategies through Jupiter V6, protect capital through a 7-layer safety Governor, and report everything live to your browser and Telegram, all without a single human click.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     BOUNTY CRITERIA — EXPLICIT RESPONSES
+════════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-label">Part 1</div>
+  <h2>Bounty Requirements — Point by Point</h2>
+  <p>Every requirement from the bounty specification is addressed below with exact implementation evidence.</p>
+
+  <h3>✅ Create a wallet programmatically</h3>
+  <p>Pulse creates all six agent wallets programmatically using <code>Keypair.generate()</code> from <code>@solana/web3.js</code> — the same cryptographic standard used by Phantom, Backpack, and every institutional custody solution on Solana. This happens automatically at server startup, before any user opens the dashboard. The <code>AgentWallet.loadOrCreate()</code> method checks for an existing encrypted wallet file; if none exists, it generates a fresh Ed25519 keypair, encrypts the private key with AES-256-GCM, and writes the ciphertext to disk.</p>
+
+  <div class="code-block">
+<span class="comment">// AgentWallet.ts — programmatic wallet creation</span>
+<span class="keyword">const</span> keypair = Keypair.<span class="fn">generate</span>();
+<span class="keyword">const</span> encrypted = <span class="keyword">this</span>.<span class="fn">encryptPrivateKey</span>(keypair.secretKey);
+fs.<span class="fn">writeFileSync</span>(walletPath, JSON.<span class="fn">stringify</span>({
+  agentId, publicKey: keypair.publicKey.toBase58(),
+  encryptedPrivateKey: encrypted.ciphertext,
+  iv: encrypted.iv, authTag: encrypted.authTag
+}));
+  </div>
+
+  <p>All six public addresses and their real Solana Explorer links are available as proof at: <a href="https://pulse.clickshift.io/api/proof/wallets"><code>pulse.clickshift.io/api/proof/wallets</code></a></p>
+
+  <h3>✅ Sign transactions automatically</h3>
+  <p>Every transaction in Pulse is signed by the agent's own keypair — autonomously, with zero human approval. The private key is decrypted in-memory only for the duration of signing, then released. It never appears in logs, never leaves the machine, and is never transmitted to any third party.</p>
+
+  <div class="code-block">
+<span class="comment">// In-memory signing — private key exists for milliseconds only</span>
+<span class="keyword">const</span> keypair = <span class="keyword">this</span>.<span class="fn">decryptKeypair</span>();   <span class="comment">// AES-256-GCM decrypt</span>
+transaction.<span class="fn">sign</span>(keypair);               <span class="comment">// Ed25519 sign</span>
+<span class="comment">// keypair goes out of scope — GC'd immediately</span>
+<span class="keyword">const</span> sig = <span class="keyword">await</span> connection.<span class="fn">sendRawTransaction</span>(transaction.<span class="fn">serialize</span>());
+  </div>
+
+  <p>Real devnet transaction evidence is generated live by clicking <strong>🔗 Prove On-Chain</strong> on the dashboard. This fires a 5-hop chain of SOL micro-transfers between all agent wallets — each signed by a different agent's keypair, each producing a real signature with a clickable Solana Explorer link returned in real time.</p>
+
+  <div class="callout green">
+    <div class="callout-label">Real transaction example</div>
+    <p>Capital distribution from orchestrator → dca_agent_01 is a real, on-chain devnet transaction signed autonomously by the orchestrator's keypair. View the wallet at the proof endpoint and click any Explorer link to verify. This is not a simulation — the SOL moved.</p>
+  </div>
+
+  <h3>✅ Hold SOL or SPL tokens</h3>
+  <p>All six agent wallets hold real SOL balances on Solana devnet. The orchestrator/vault wallet receives the user's initial deposit and distributes to sub-agents via real on-chain transfers. Each agent independently holds and manages its own allocation. Balances are visible in real time on the dashboard and verifiable on Solana Explorer.</p>
+  <ul>
+    <li><strong>orchestrator_main</strong> — vault, receives deposits, distributes capital</li>
+    <li><strong>dca_agent_01</strong> — holds SOL for recurring BONK purchases via Jupiter V6</li>
+    <li><strong>trailing_agent_01</strong> — holds SOL for exit transactions when stops trigger</li>
+    <li><strong>scout_agent_01</strong> — holds SOL for opportunity entries flagged on Raydium</li>
+    <li><strong>risk_manager_01</strong> — minimal SOL, monitors all positions via RugCheck.xyz</li>
+    <li><strong>off_ramp_agent_01</strong> — holds SOL pending sweep to cold wallet when P&amp;L target hit</li>
+  </ul>
+
+  <h3>✅ Interact with a test dApp or protocol</h3>
+  <p>Pulse interacts with <strong>two live protocols</strong> and one existing consumer application with real users:</p>
+
+  <h3 style="margin-top:1.2rem">1. Jupiter V6 DEX Aggregator</h3>
+  <p>Every DCA execution and trailing stop exit routes through Jupiter V6's public API. The agent fetches a real-time swap quote, validates the price impact, constructs a <code>VersionedTransaction</code>, signs it with the agent's keypair, and broadcasts to devnet. This is genuine programmatic dApp interaction — not a mock.</p>
+  <div class="code-block">
+GET  https://quote-api.jup.ag/v6/quote?inputMint=So111...&outputMint=DezXAZ...
+POST https://quote-api.jup.ag/v6/swap   <span class="comment">// returns serialised VersionedTransaction</span>
+<span class="comment">// Agent signs locally → broadcasts to Solana devnet RPC</span>
+  </div>
+
+  <h3>2. Clickbot — Live Telegram dApp with Real Users</h3>
+  <p>This is what separates Pulse from every other submission. <strong>Clickbot</strong> is a live Telegram-based Solana wallet with real Nigerian users, its own NGN/USDC on-ramp and off-ramp, and an existing user base. Pulse is fully integrated into Clickbot via <strong>nine live Telegram commands</strong>:</p>
+  <ul>
+    <li><code>/pulse</code> — complete swarm status sent to your phone</li>
+    <li><code>/pulse_deploy [command]</code> — natural language command to orchestrator AI</li>
+    <li><code>/pulse_mission [text]</code> — change the active mission directive live</li>
+    <li><code>/pulse_fund</code> — vault address to deposit SOL from within Clickbot</li>
+    <li><code>/pulse_agents</code> — all agent wallets with balances and Explorer links</li>
+    <li><code>/pulse_recall [agentId]</code> — recall SOL from any agent to vault</li>
+    <li><code>/pulse_sack [agentId]</code> — terminate an agent and recall its funds</li>
+    <li><code>/pulse_sim</code> — trigger the full demonstration simulation</li>
+    <li><code>/pulse_trades</code> — wallet proof with all on-chain transaction links</li>
+  </ul>
+
+  <div class="callout cyan">
+    <div class="callout-label">Why this matters for the bounty</div>
+    <p>The bounty asks builders to "interact with a test dApp or protocol." Pulse <em>is</em> the protocol. Clickbot <em>is</em> the dApp. A user types <code>/pulse_deploy</code> in Telegram → Clickbot calls the Pulse REST API → the Orchestrator AI reasons about the portfolio → the Governor approves → an agent signs and sends a real devnet transaction → the Explorer link returns to the user's phone. That is a complete autonomous agent wallet loop, triggered from a consumer Telegram interface with real users. No other submission demonstrates external application consumption of a live agentic wallet protocol.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     TECHNICAL DEEP DIVE
+════════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-label">Part 2</div>
+  <h2>Technical Deep Dive</h2>
+
+  <h3>Wallet Design &amp; Cryptography</h3>
+  <p>The <code>AgentWallet</code> class is the foundational primitive of the entire system. Every agent is, at its core, a wallet with a reasoning layer attached to it. The design philosophy is <strong>isolation-first</strong>: no agent can access another agent's key material under any circumstances.</p>
+
+  <p><strong>Keypair Generation.</strong> Wallets use Ed25519 elliptic curve cryptography via <code>Keypair.generate()</code> from <code>@solana/web3.js</code>. The same cryptographic foundation used by hardware wallets and institutional custody solutions. The public key is derived deterministically from the private key and stored in plaintext. The private key never exists in plaintext on disk.</p>
+
+  <p><strong>Key Encryption (AES-256-GCM).</strong> The moment a keypair is generated, the private key is encrypted using AES-256-GCM with a 256-bit key derived from the <code>ENCRYPTION_SECRET</code> environment variable. The wallet file on disk contains only: <code>publicKey</code> (plaintext), <code>encryptedPrivateKey</code> (ciphertext), <code>iv</code> (plaintext), <code>authTag</code> (plaintext). The authTag provides cryptographic integrity — any file tampering is detectable. The plaintext private key never exists after <code>encrypt()</code> returns.</p>
+
+  <p><strong>Agent Isolation.</strong> Each of the six agents has a completely independent encrypted wallet file. There is no shared key material, no master key that exposes all agents simultaneously, and no cross-agent key access anywhere in the codebase. Compromise of one wallet exposes nothing about any other. The blast radius is exactly one agent.</p>
+
+  <h3>The Governor: 7-Layer Safety System</h3>
+  <p>The Governor is the most architecturally important component. It has no wallet, no agency, and no opinions about strategy. It is a stateless gatekeeper that sits between every AI decision and every wallet signature. The design principle: <strong>the AI cannot harm the user even if it hallucinates.</strong></p>
+
+  <table class="gov-table">
+    <thead>
+      <tr><th>#</th><th>Rule</th><th>Protection</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><span class="layer-num">1</span></td><td><strong>Balance check</strong></td><td>Agent cannot spend more SOL than it holds</td></tr>
+      <tr><td><span class="layer-num">2</span></td><td><strong>Single-tx cap</strong></td><td>No single transaction exceeds 0.5 SOL — caps AI aggression</td></tr>
+      <tr><td><span class="layer-num">3</span></td><td><strong>Daily spend limit</strong></td><td>Maximum 2.0 SOL per day across all agents — hard budget ceiling</td></tr>
+      <tr><td><span class="layer-num">4</span></td><td><strong>Price impact guard</strong></td><td>Slippage must stay below 3% — prevents bad routing</td></tr>
+      <tr><td><span class="layer-num">5</span></td><td><strong>Liquidity check</strong></td><td>Pool must meet minimum TVL — prevents low-liquidity traps</td></tr>
+      <tr><td><span class="layer-num">6</span></td><td><strong>Token blacklist</strong></td><td>Known bad tokens blocked before any buy executes</td></tr>
+      <tr><td><span class="layer-num">7</span></td><td><strong>RugCheck score</strong></td><td>RugCheck.xyz API score must be below 500/1000 to proceed</td></tr>
+    </tbody>
+  </table>
+
+  <p>The Governor also has <strong>fund recall authority</strong> — it can instruct any agent to return its entire SOL allocation to the vault with a single API call. This is demonstrated live via the Drain and Recall buttons on the dashboard.</p>
+
+  <h3>The Heartbeat Architecture — What Makes Agents Alive</h3>
+  <p>A bot reacts to commands. An agent wakes up on its own, perceives its environment, and acts. Every Pulse agent runs an independent <code>HeartbeatEngine</code> — a self-managing interval loop that fires autonomously every 45–120 seconds depending on the agent's role. Each heartbeat cycle follows a fixed six-step protocol:</p>
+  <ol>
+    <li><strong>WAKE</strong> — Agent comes online, checks running state, logs cycle number</li>
+    <li><strong>READ</strong> — Reads <code>HEARTBEAT.md</code> directive file and fetches live market prices</li>
+    <li><strong>THINK</strong> — Routes to Ornchestrator agent with full portfolio context for AI reasoning</li>
+    <li><strong>PLAN</strong> — Decides on actions based on AI output (rule-based fallback if no API key)</li>
+    <li><strong>EXECUTE</strong> — Submits planned actions to the Governor for approval and wallet signing</li>
+    <li><strong>SLEEP</strong> — Logs result, emits <code>cycle_complete</code> event, waits for next interval</li>
+  </ol>
+
+  <p>Every step of every cycle is broadcast through the <strong>ThoughtStream</strong> — a singleton EventEmitter that pushes thoughts via WebSocket to the live dashboard in real time. Judges watching the demo see the agent's internal monologue as it happens.</p>
+
+  <div class="thought-demo">
+<span class="t-wake">⏰ [dca_agent_01]</span> <span class="t-agent">Waking up. Cycle #47. Good morning.</span><br>
+<span class="t-read">📖 [dca_agent_01]</span> <span class="t-agent">Reading HEARTBEAT.md directive file...</span><br>
+<span class="t-read">📊 [dca_agent_01]</span> <span class="t-agent">Portfolio: 0.1680 SOL (~$30.04 USD) | SOL: $178.82</span><br>
+<span class="t-think">🤔 [dca_agent_01]</span> <span class="t-agent">Price down. Good. My average cost improves with every red candle.</span><br>
+<span class="t-plan">📋 [dca_agent_01]</span> <span class="t-agent">→ [risk_manager_01]: BONK is clean this cycle. You are clear to execute.</span><br>
+<span class="t-read">✅ [risk_manager_01]</span> <span class="t-agent">→ [dca_agent_01]: Confirmed. BONK score 112/1000. Executing.</span><br>
+<span class="t-exec">⚡ [dca_agent_01]</span> <span class="t-agent">Signing transaction: 0.001 SOL → BONK via Jupiter V6...</span><br>
+<span class="t-success">✅ [dca_agent_01]</span> <span class="t-agent">Confirmed: 5xHBqJmXwT... View on Solana Explorer →</span>
+  </div>
+
+  <h3>The Six-Agent Swarm</h3>
+  <div class="agent-grid">
+    <div class="agent-card">
+      <div class="emoji">🧠</div>
+      <div class="name">Orchestrator</div>
+      <div class="hb">Continuous · Vault</div>
+      <div class="desc">AI brain. Receives natural language commands, reasons with the proprietary Clickshift intelligence, distributes capital, coordinates the entire swarm. The only protected agent that cannot be sacked.</div>
+    </div>
+    <div class="agent-card">
+      <div class="emoji">📈</div>
+      <div class="name">DCA Agent</div>
+      <div class="hb">Every 45s</div>
+      <div class="desc">Dollar-cost averages into target tokens via Jupiter V6. Signs real swap transactions each cycle when the Governor approves. Never panics, never FOMO's.</div>
+    </div>
+    <div class="agent-card">
+      <div class="emoji">📉</div>
+      <div class="name">Trailing Stop</div>
+      <div class="hb">Every 60s</div>
+      <div class="desc">Tracks peak prices for all positions. Fires an autonomous exit transaction when drawdown from peak exceeds the configured threshold. Locks in gains without human attention.</div>
+    </div>
+    <div class="agent-card">
+      <div class="emoji">🏹</div>
+      <div class="name">Scout Agent</div>
+      <div class="hb">Every 90s</div>
+      <div class="desc">Scans for new Raydium pool launches. Runs rug filters: liquidity lock, mint authority, supply concentration. Flags clean opportunities to the Orchestrator for sniper action.</div>
+    </div>
+    <div class="agent-card">
+      <div class="emoji">🚨</div>
+      <div class="name">Risk Manager</div>
+      <div class="hb">Every 75s</div>
+      <div class="desc">Runs RugCheck.xyz API on all positions. Enforces concentration limits. Can halt other agents. The swarm's immune system — always scanning, always protecting.</div>
+    </div>
+    <div class="agent-card">
+      <div class="emoji">💸</div>
+      <div class="name">Off-Ramper</div>
+      <div class="hb">Every 120s</div>
+      <div class="desc">Monitors portfolio P&L. When profit exceeds the configured threshold, sweeps gains to a cold wallet. Bridges to fiat via Clickbot's NGN off-ramp. Profit that actually lands in your bank.</div>
+    </div>
+  </div>
+
+  <h3>Custom Agent Spawning — The Protocol's Superpower</h3>
+  <p>Beyond the six core agents, Pulse implements a full <strong>AgentFactory</strong> that spawns custom agents at runtime with zero downtime. When a custom agent is created:</p>
+  <ol>
+    <li>A new Solana keypair is generated and encrypted immediately</li>
+    <li>The wallet is registered with the Orchestrator and appears in the dashboard instantly</li>
+    <li>The agent receives a capital allocation from the vault via a real on-chain transfer</li>
+    <li>Its heartbeat engine starts running independently within seconds</li>
+    <li>Its wallet address is live on Solana Explorer with a verifiable balance</li>
+  </ol>
+
+  <div class="callout cyan">
+    <div class="callout-label">This is the product vision</div>
+    <p>Custom agent spawning is the foundation of the Pulse Protocol mainnet roadmap. Every user gets their own agent swarm — each agent a sovereign wallet, each wallet controlled by a reasoning AI. A Whale Watcher. A Sniper. A Yield Optimizer. A Stablecoin Keeper. Each with its own encrypted keypair and independent operation, all within one coherent strategy. The six core agents are the seed. The factory is the future.</p>
+  </div>
+
+  <h3>SKILLS.md — Agent-Readable System Documentation</h3>
+  <p>As required by the bounty specification, a <code>SKILLS.md</code> file is included in the repository root. This file is written in structured natural language that agent systems can parse and act upon — describing the Pulse system capabilities, API endpoints, agent roles, and integration patterns. Any AI agent reading this file can understand what Pulse does and how to interact with it programmatically. This is intentional: in the Pulse multichain vision, other AI agents in the ecosystem will consume Pulse as a wallet-management service.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     JUDGING CRITERIA
+════════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-label">Part 3</div>
+  <h2>Judging Criteria — Full Assessment</h2>
+
+  <h3>Functional demonstration of an autonomous agent wallet</h3>
+  <div class="criterion">
+    <div class="criterion-text"><strong>Create wallet programmatically</strong><span>AgentWallet.loadOrCreate() → Keypair.generate() → AES-256-GCM encrypt → persist to disk. Runs at startup for all 6 agents automatically.</span></div>
+    <div class="criterion-badge badge-met">✅ MET</div>
+  </div>
+  <div class="criterion">
+    <div class="criterion-text"><strong>Sign transactions automatically</strong><span>Every DCA swap, SOL transfer, trailing stop exit, and capital recall is signed autonomously by the agent keypair. Zero human input required. Real devnet signatures verifiable on Explorer.</span></div>
+    <div class="criterion-badge badge-met">✅ MET</div>
+  </div>
+  <div class="criterion">
+    <div class="criterion-text"><strong>Hold SOL or SPL tokens</strong><span>All 6 agent wallets hold real SOL on devnet now. Balances visible on dashboard and on Solana Explorer via /api/proof/wallets.</span></div>
+    <div class="criterion-badge badge-met">✅ MET</div>
+  </div>
+  <div class="criterion">
+    <div class="criterion-text"><strong>Interact with dApp or protocol</strong><span>Jupiter V6 DEX (real VersionedTransactions) + Clickbot Telegram (9 live commands, real users, NGN fiat bridge). Dual protocol integration.</span></div>
+    <div class="criterion-badge badge-extra">✅ EXCEEDED</div>
+  </div>
+
+  <h3>Security and proper key management</h3>
+  <div class="criterion">
+    <div class="criterion-text"><strong>Safe key storage</strong><span>AES-256-GCM encryption. Private key never exists in plaintext on disk. Every agent's key encrypted independently with unique IV and authTag.</span></div>
+    <div class="criterion-badge badge-met">✅ MET</div>
+  </div>
+  <div class="criterion">
+    <div class="criterion-text"><strong>In-memory signing only</strong><span>Private key decrypted in-memory for signing duration only. Never logged, never transmitted, never stored post-signing. Garbage-collected immediately.</span></div>
+    <div class="criterion-badge badge-met">✅ MET</div>
+  </div>
+  <div class="criterion">
+    <div class="criterion-text"><strong>Agent isolation</strong><span>Six independent keypairs. Compromise of one agent exposes nothing about others. No shared key material anywhere in the codebase.</span></div>
+    <div class="criterion-badge badge-met">✅ MET</div>
+  </div>
+  <div class="criterion">
+    <div class="criterion-text"><strong>AI safety layer</strong><span>7-layer Governor — daily spend limits, per-tx caps, rug check scores, blacklists, price impact guards. AI cannot drain the wallet even if it hallucinates. No submission in this bounty has an equivalent safety architecture.</span></div>
+    <div class="criterion-badge badge-extra">✅ EXCEEDED</div>
+  </div>
+
+  <h3>Clear documentation and deep dive explanation</h3>
+  <div class="criterion">
+    <div class="criterion-text"><strong>This document</strong><span>Comprehensive written deep dive covering wallet design, security architecture, agent coordination, and full bounty criterion evidence.</span></div>
+    <div class="criterion-badge badge-met">✅ MET</div>
+  </div>
+  <div class="criterion">
+    <div class="criterion-text"><strong>Live documentation page</strong><span>pulse.clickshift.io/docs.html — full technical architecture accessible from the dashboard.</span></div>
+    <div class="criterion-badge badge-met">✅ MET</div>
+  </div>
+  <div class="criterion">
+    <div class="criterion-text"><strong>SKILLS.md</strong><span>Agent-readable system documentation in the repository root per bounty specification.</span></div>
+    <div class="criterion-badge badge-met">✅ MET</div>
+  </div>
+  <div class="criterion">
+    <div class="criterion-text"><strong>Video deep dive</strong><span>15-minute video demonstrating live agents, real transactions, Clickbot integration, Governor safety blocks, and wallet proof endpoint.</span></div>
+    <div class="criterion-badge badge-met">✅ MET</div>
+  </div>
+
+  <h3>Scalability: support multiple agents independently</h3>
+  <div class="criterion">
+    <div class="criterion-text"><strong>Six simultaneous independent agents</strong><span>All 6 agents have their own wallet, their own heartbeat interval, their own capital, and their own reasoning loop — running in parallel right now on devnet.</span></div>
+    <div class="criterion-badge badge-met">✅ MET</div>
+  </div>
+  <div class="criterion">
+    <div class="criterion-text"><strong>Custom agent spawning at runtime</strong><span>AgentFactory spawns new agents with fresh keypairs on demand. New wallet created, registered, and breathing within seconds. Demonstrated live in the dashboard.</span></div>
+    <div class="criterion-badge badge-extra">✅ EXCEEDED</div>
+  </div>
+  <div class="criterion">
+    <div class="criterion-text"><strong>Sack and revive lifecycle</strong><span>Any non-protected agent can be sacked (funds recalled, deregistered) and revived (wallet reloaded, re-registered, heartbeat restarted). Full agent lifecycle management.</span></div>
+    <div class="criterion-badge badge-extra">✅ EXCEEDED</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     WHY SOLANA SHOULD PAY ATTENTION
+════════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-label">Part 4</div>
+  <h2>Why Solana Should Pay Attention to Pulse</h2>
+
+  <h3>The Wallet Is the Last Interface That Hasn't Been Reinvented</h3>
+  <p>Solana has the fastest L1. It has the best DEX aggregation through Jupiter. It has deep DeFi liquidity and a thriving ecosystem. What it does not yet have is a <strong>wallet layer that thinks for itself.</strong></p>
+  <p>Every interaction on Solana today still requires a human to click something. Approve this transaction. Set this limit. Enter this amount. The human is the bottleneck — the most error-prone, emotionally volatile, sleep-deprived component in the entire DeFi stack. Pulse removes the human from the execution loop while keeping them fully in control of strategy. You set the mission. The swarm executes it. You trust the Governor. You sleep.</p>
+
+  <h3>Clickshift Is Building the Brain Layer for Autonomous On-Chain Action</h3>
+  <p>Pulse is not an isolated project. It is the first production deployment of the <strong>Clickshift Agentic Infrastructure</strong> — the underlying engine that will power autonomous agent wallets for any user, any strategy, any protocol.</p>
+  <p>At <strong>clickshift.io</strong>, we are building the primitive that every autonomous DeFi protocol will need: a wallet that is also an agent. A signing key that is also a reasoning system. A transaction broadcaster that is also a risk manager. We are building the brain that powers autonomous agents on-chain for profit — and Pulse is the proof that this brain works.</p>
+  <p>The Clickbot integration proves this is not theoretical. Clickbot already has users. It already has NGN/USDC on-ramps. It already has a bank off-ramp. Pulse plugs into Clickbot and suddenly those users have an autonomous agent swarm managing their DeFi exposure — from Telegram, in their language, with naira output. That is a product. That is a live market. That is traction.</p>
+
+  <h3>Custom Agents Are the Marketplace</h3>
+  <p>Every agent type that can be spawned is a product in itself. A Whale Watcher that tracks large on-chain moves and front-runs intelligently. A Yield Optimizer that rotates between Solana LST opportunities automatically. A Stablecoin Keeper that sweeps profits to USDC the moment a price target is hit. A Sniper that enters new Raydium pools that pass all seven rug checks within the first 30 seconds of launch.</p>
+  <p>Users will not buy Pulse. They will subscribe to agents. The Pulse Protocol becomes the App Store for autonomous DeFi wallets — every agent a sovereign entity with its own encrypted keypair, its own capital allocation, and its own strategy. All governed by the same safety layer. All verifiable on-chain.</p>
+
+  <h3>The African DeFi Case</h3>
+  <p>As a Nigerian builder with over half a decade experince in blockchain development, I designed Pulse for users who understand viscerally why autonomous asset management is not a luxury — it is infrastructure. Currency instability, banking friction, limited dollar access, high remittance costs. An agent that converts profits to stablecoins before the naira moves. An agent that executes DCA into hard assets without constant attention. An agent that sweeps profits through the Clickbot bridge directly to a Nigerian bank account.</p>
+  <p>Two hundred million Nigerians and 1.4 billion Africans deserve access to the same autonomous tools that institutional traders use — without needing to understand a single technical term. Pulse is that access layer. Clickbot is the delivery mechanism. Solana is the settlement layer.</p>
+
+  <h3>The Multichain Roadmap</h3>
+  <p>The Pulse architecture is chain-agnostic by design. The Governor, the HeartbeatEngine, the AgentFactory, the ThoughtStream, the personality layer — none of these are Solana-specific. Only the wallet layer (<code>@solana/web3.js</code>) and the DEX layer (Jupiter) are chain-specific components, and both are swappable.</p>
+  <p><strong>Phase 1:</strong> Solana mainnet — deepest liquidity, fastest settlement, lowest fees. <strong>Phase 2:</strong> Base (EVM) — largest retail user base, ethers.js swap. <strong>Phase 3:</strong> Chain-abstracted — the user says "DCA into ETH." Pulse picks the optimal chain, route, and execution path. The agent swarm handles everything. The user sees only the result.</p>
+
+  <div class="vision-quote">
+    <p>"Every person on earth deserves an AI agent that manages their on-chain wealth the way a Goldman Sachs quant would — autonomously, securely, transparently, and without ever asking them to click a button. Pulse is how we get there."</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     ALL LINKS
+════════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-label">Part 5</div>
+  <h2>Live System &amp; Verification Links</h2>
+
+  <h3>Dashboard &amp; UI</h3>
+  <div class="link-grid">
+    <a class="link-card" href="https://pulse.clickshift.io/dashboard.html" target="_blank">
+      <div class="link-icon">🖥️</div>
+      <div class="link-label">Live Dashboard</div>
+      <div class="link-url">pulse.clickshift.io/dashboard.html</div>
+    </a>
+    <a class="link-card" href="https://pulse.clickshift.io/graph.html" target="_blank">
+      <div class="link-icon">⚡</div>
+      <div class="link-label">ECG Heartbeat Graph</div>
+      <div class="link-url">pulse.clickshift.io/graph.html</div>
+    </a>
+    <a class="link-card" href="https://pulse.clickshift.io/metrics.html" target="_blank">
+      <div class="link-icon">📊</div>
+      <div class="link-label">Protocol Metrics</div>
+      <div class="link-url">pulse.clickshift.io/metrics.html</div>
+    </a>
+    <a class="link-card" href="https://pulse.clickshift.io/docs.html" target="_blank">
+      <div class="link-icon">📄</div>
+      <div class="link-label">Architecture Docs</div>
+      <div class="link-url">pulse.clickshift.io/docs.html</div>
+    </a>
+  </div>
+
+  <h3>Bounty Evidence Endpoints</h3>
+  <div class="link-grid">
+    <a class="link-card" href="https://pulse.clickshift.io/api/proof/wallets" target="_blank">
+      <div class="link-icon">🔑</div>
+      <div class="link-label">Wallet Proof (all 6 agents)</div>
+      <div class="link-url">pulse.clickshift.io/api/proof/wallets</div>
+    </a>
+    <a class="link-card" href="https://pulse.clickshift.io/api/health" target="_blank">
+      <div class="link-icon">💚</div>
+      <div class="link-label">System Health</div>
+      <div class="link-url">pulse.clickshift.io/api/health</div>
+    </a>
+    <a class="link-card" href="https://pulse.clickshift.io/api/governor/status" target="_blank">
+      <div class="link-icon">🛡️</div>
+      <div class="link-label">Governor Status</div>
+      <div class="link-url">pulse.clickshift.io/api/governor/status</div>
+    </a>
+    <a class="link-card" href="https://pulse.clickshift.io/api/portfolio" target="_blank">
+      <div class="link-icon">💼</div>
+      <div class="link-label">Live Portfolio</div>
+      <div class="link-url">pulse.clickshift.io/api/portfolio</div>
+    </a>
+  </div>
+
+  <h3>Clickbot Integration (Telegram)</h3>
+  <div class="callout amber">
+    <div class="callout-label">Live Telegram Demo</div>
+    <p>Open Telegram → search <strong>@clicksolbot</strong> → type <code>/pulse</code> to see live swarm status. Type <code>/pulse_deploy [any instruction]</code> to send a natural language command to the orchestrator AI and watch it reason and respond. This is a live system with real users.</p>
+  </div>
+
+  <h3>Prove On-Chain (Real Devnet Transactions)</h3>
+  <p>Visit the dashboard → ensure the vault has SOL → click <strong>🔗 Prove On-Chain</strong>. Watch 5 real devnet transactions execute in sequence — each signed by a different agent keypair, each producing a real Solana Explorer link that verifies the autonomous signature. This is the clearest possible proof that the wallets are real, the agents are signing, and the chain is recording it.</p>
+</div>
+</div><!-- /container -->
+
+<!-- ═══════════════════════════════════════════════════════════════
+     FOOTER
+════════════════════════════════════════════════════════════════ -->
+<div class="footer">
+  <p style="margin-bottom:.5rem"><strong>PULSE</strong> — Agentic Wallet OS on Solana</p>
+  <p style="margin-bottom:.5rem">Built by <strong>Emmanuel</strong> · <strong>clickshift.io</strong> · Nigeria 🇳🇬</p>
+  <p style="margin-bottom:1.5rem">Superteam Nigeria · DeFi Agentic Wallets Bounty · March 2026 · Solo Submission</p>
+  <p style="font-size:.78rem;color:#334155">"The future of DeFi is not a better dashboard. It is a wallet that fires you from the job of managing it."</p>
+</div>
+
+</body>
+</html>
