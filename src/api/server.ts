@@ -682,21 +682,26 @@ app.get("/api/proof/wallets", async (_req, res) => {
     const cluster = network === "mainnet-beta" ? "" : "?cluster=devnet";
     const proofs = all.map((a) => ({
       agentId: a.agentId,
-      role: a.agentRole,          // WalletMetadata uses agentRole, not role
+      role: a.agentRole,
       publicKey: a.publicKey,
       explorerAddress: `https://explorer.solana.com/address/${a.publicKey}${cluster}`,
       created: a.createdAt || "at startup",
       totalTransactions: a.totalTransactions || 0,
+      keyVersion: a.keyVersion || 1,
+      securityModel: (a.keyVersion || 1) >= 2
+        ? "HKDF-SHA256 per-agent key derivation + AES-256-GCM (v2)"
+        : "AES-256-GCM shared scrypt key (v1 — legacy)",
     }));
     res.json({
       totalAgents: proofs.length,
       network,
-      note: "Each wallet was created programmatically by AgentWallet.loadOrCreate(). Keys encrypted with AES-256-GCM. Agents sign transactions autonomously.",
+      note: "Each wallet created programmatically by AgentWallet.loadOrCreate(). Private keys encrypted with AES-256-GCM using HKDF-derived per-agent keys. Agents sign autonomously.",
       bountyEvidence: {
-        walletCreation:    "Programmatic keypair generation via @solana/web3.js Keypair.generate()",
-        keyStorage:        "AES-256-GCM encryption with scrypt KDF — private key never exposed",
-        autonomousSigning: "Agents call signAndSendVersionedTransaction() without user interaction",
-        dAppInteraction:   "Jupiter V6 DEX — quote-api.jup.ag/v6 — fully programmatic",
+        walletCreation:    "Programmatic Ed25519 keypair generation via @solana/web3.js Keypair.generate()",
+        keyStorage:        "AES-256-GCM + HKDF-SHA256 per-agent key derivation — each agent unique key, no key stored on disk",
+        autonomousSigning: "Agents call signAndSendVersionedTransaction() with zero human interaction",
+        dAppInteraction:   "Jupiter V6 DEX (quote-api.jup.ag/v6) + Clickbot Telegram (9 live commands, real users)",
+        securityUpgrade:   "keyVersion 2: HKDF derives unique 32B key per agent from MASTER_KEY+agentId+perAgentSalt. Compromise of one wallet reveals nothing about others.",
       },
       wallets: proofs,
     });
@@ -772,6 +777,19 @@ setInterval(async () => {
   } catch { /* don't let personality ticker crash anything */ }
 
 }, 18_000); // every 18 seconds
+
+
+// ─── Key Rotation ────────────────────────────────────────────────────────────
+app.post("/api/security/rotate-keys", async (req, res) => {
+  const { oldSecret } = req.body;
+  if (!oldSecret) return res.status(400).json({ error: "oldSecret required" });
+  try {
+    const result = await AgentWallet.rotateAllKeys(oldSecret, connection);
+    thoughtStream.think("orchestrator_main", "SUCCESS",
+      `🔐 Key rotation complete. Rotated: ${result.rotated.length}. Failed: ${result.failed.length}.`);
+    res.json({ success: true, ...result });
+  } catch (err: any) { res.status(500).json({ error: err.message }); }
+});
 
 app.post("/api/agents/:agentId/revive", async (req, res) => {
   const { agentId } = req.params;

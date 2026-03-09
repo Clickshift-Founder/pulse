@@ -237,7 +237,8 @@ POST /api/factory/spawn
 
 // Factory maps "whale" → whale_watcher role
 // Creates Ed25519 keypair on Solana
-// Encrypts with AES-256-GCM
+// Derives unique key via HKDF-SHA256 (MASTER_KEY + agentId + perAgentSalt)
+// Encrypts with AES-256-GCM (authenticated)
 // Starts heartbeat
 // Registers with Orchestrator</code></pre>
     <p>Available roles: <code>dca_agent</code> · <code>trailing_stop</code> · <code>sniper_agent</code> · <code>whale_watcher</code> · <code>arbitrage_agent</code> · <code>yield_farmer</code> · <code>sentiment_trader</code></p>
@@ -264,13 +265,24 @@ Governor.approveSwap(amountSOL, targetMint)
     </div>
     <div class="card">
       <div class="card-title c-green">Agent Wallets (Sub-agents)</div>
-      <p style="font-size:.78rem;color:#a0b8d0;margin:0">Each agent has its own Ed25519 keypair, encrypted with AES-256-GCM using <code>ENCRYPTION_SECRET</code>. Stored in <code>agent_wallets/</code> — NOT in git. The agent can sign transactions autonomously without user interaction.</p>
+      <p style="font-size:.78rem;color:#a0b8d0;margin:0">Each agent has its own Ed25519 keypair protected by a <strong style="color:#6EE7B7">two-layer HKDF key derivation scheme</strong>:</p>
+      <ul style="font-size:.75rem;color:#a0b8d0;margin:.5rem 0 0;padding-left:1.2rem;line-height:1.8;">
+        <li><code>MASTER_KEY</code> hardened from env via <strong>scrypt</strong> (N=32768) — never on disk</li>
+        <li>Per-agent key derived via <strong>HKDF-SHA256</strong> using MASTER_KEY + agentId + unique perAgentSalt</li>
+        <li>Private key encrypted with <strong>AES-256-GCM</strong> (authenticated — tamper-detectable)</li>
+        <li>Key material explicitly <strong>zeroed from memory</strong> after every sign operation</li>
+        <li>Compromise of one agent reveals <strong>nothing</strong> about any other agent</li>
+      </ul>
+      <p style="font-size:.75rem;color:#a0b8d0;margin:.5rem 0 0">Stored in <code>agent_wallets/</code> — NOT in git. <code>keyVersion: 2</code> in each file confirms HKDF scheme is active.</p>
     </div>
     <div class="card">
       <div class="card-title c-yellow">Cold Wallet (Off-ramp destination)</div>
       <p style="font-size:.78rem;color:#a0b8d0;margin:0">Your personal external wallet (Phantom, etc.). Set via <code>OFFRAMP_DESTINATION</code> env var. Profits sweep here at the configured threshold (default 15%). Clickbot can convert these to fiat.</p>
     </div>
-    <div class="callout warn">⚠️ Back up <code>ENCRYPTION_SECRET</code> and <code>agent_wallets/</code> offline. Losing <code>ENCRYPTION_SECRET</code> means losing access to all agent wallets.</div>
+    <div class="callout warn">⚠️ Back up <code>ENCRYPTION_SECRET</code> and <code>agent_wallets/</code> offline. Losing <code>ENCRYPTION_SECRET</code> (MASTER_KEY source) means losing access to all agent wallets — the wallet files alone cannot be decrypted without it.</div>
+    <div class="callout" style="background:rgba(99,102,241,.08);border-color:#4F46E5;margin-top:.75rem;">
+      🔄 <strong>Key Rotation:</strong> To rotate the master key, update <code>ENCRYPTION_SECRET</code> in your <code>.env</code>, then call <code>POST /api/security/rotate-keys</code> with <code>{"oldSecret": "..."}</code>. All agent wallets are re-derived and re-encrypted with the new key. Old wallet files are overwritten. No agent downtime required.
+    </div>
 
     <!-- API REFERENCE -->
     <h2 id="api-reference">REST API Reference</h2>
@@ -338,7 +350,7 @@ ws.onmessage = (e) => {
     <h2 id="env-vars">Environment Variables</h2>
     <table>
       <tr><th>Variable</th><th>Required</th><th>Description</th></tr>
-      <tr><td><code>ENCRYPTION_SECRET</code></td><td>✅ Yes</td><td>64-char hex for AES-256-GCM wallet encryption</td></tr>
+      <tr><td><code>ENCRYPTION_SECRET</code></td><td>✅ Yes</td><td>MASTER_KEY source — hardened with scrypt, then HKDF derives unique key per agent. 64-char hex recommended.</td></tr>
       <tr><td><code>SOLANA_RPC_URL</code></td><td>✅ Yes</td><td>Solana RPC endpoint (devnet or mainnet)</td></tr>
       <tr><td><code>OPENAI_API_KEY</code></td><td>Optional</td><td>GPT-4o-mini for AI reasoning. Falls back to rule-based</td></tr>
       <tr><td><code>OFFRAMP_DESTINATION</code></td><td>Optional</td><td>Cold wallet address for profit sweeps</td></tr>

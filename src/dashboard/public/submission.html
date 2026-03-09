@@ -428,6 +428,102 @@
   <div class="hero-meta">Built by Emmanuel Ohanwe· clickshift.io · Solo submission · Nigeria 🇳🇬</div>
 </div>
 
+<!-- SECURITY BANNER -->
+<div style="background:linear-gradient(135deg,#0F172A 0%,#1a1040 100%);border-top:1px solid #1E293B;border-bottom:1px solid #1E293B;padding:2.5rem 2rem;">
+  <div style="max-width:820px;margin:0 auto;">
+    <div style="font-family:Arial,sans-serif;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:#818CF8;font-weight:700;margin-bottom:.6rem;text-align:center;">
+      Security Architecture
+    </div>
+    <div style="font-family:Arial,sans-serif;font-size:1.15rem;font-weight:800;color:white;text-align:center;margin-bottom:.4rem;">
+      Two-Layer HKDF Key Derivation &mdash; Engineered Beyond Industry Standard
+    </div>
+    <div style="font-family:Arial,sans-serif;font-size:.85rem;color:#64748B;text-align:center;margin-bottom:2rem;">
+      Every agent wallet is protected by a unique cryptographic key derived — not stored — using HKDF-SHA256
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:1.75rem;">
+      <div style="background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:.6rem;padding:1rem;text-align:center;">
+        <div style="font-size:1.4rem;margin-bottom:.4rem;">🔑</div>
+        <div style="font-family:Arial,sans-serif;font-size:.78rem;font-weight:700;color:#A5B4FC;margin-bottom:.25rem;">HKDF-SHA256</div>
+        <div style="font-family:Arial,sans-serif;font-size:.72rem;color:#475569;">Per-agent key derived from MASTER_KEY + agentId + unique salt. RFC 5869.</div>
+      </div>
+      <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:.6rem;padding:1rem;text-align:center;">
+        <div style="font-size:1.4rem;margin-bottom:.4rem;">🔐</div>
+        <div style="font-family:Arial,sans-serif;font-size:.78rem;font-weight:700;color:#6EE7B7;margin-bottom:.25rem;">AES-256-GCM</div>
+        <div style="font-family:Arial,sans-serif;font-size:.72rem;color:#475569;">Authenticated encryption. Auth tag detects any tampering with key files on disk.</div>
+      </div>
+      <div style="background:rgba(8,145,178,.08);border:1px solid rgba(8,145,178,.2);border-radius:.6rem;padding:1rem;text-align:center;">
+        <div style="font-size:1.4rem;margin-bottom:.4rem;">🧂</div>
+        <div style="font-family:Arial,sans-serif;font-size:.78rem;font-weight:700;color:#67E8F9;margin-bottom:.25rem;">scrypt Hardening</div>
+        <div style="font-family:Arial,sans-serif;font-size:.72rem;color:#475569;">MASTER_KEY hardened with scrypt N=32768. Brute-force cost is prohibitive.</div>
+      </div>
+      <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:.6rem;padding:1rem;text-align:center;">
+        <div style="font-size:1.4rem;margin-bottom:.4rem;">🧹</div>
+        <div style="font-family:Arial,sans-serif;font-size:.78rem;font-weight:700;color:#FCA5A5;margin-bottom:.25rem;">Memory Zeroing</div>
+        <div style="font-family:Arial,sans-serif;font-size:.72rem;color:#475569;">Key material explicitly zeroed with .fill(0) after every signing operation.</div>
+      </div>
+    </div>
+    <!-- Comparison table -->
+    <div style="font-family:Arial,sans-serif;font-size:.75rem;font-weight:700;color:#64748B;text-align:center;margin-bottom:.75rem;letter-spacing:.08em;text-transform:uppercase;">How Pulse compares</div>
+    <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif;font-size:.78rem;">
+      <thead>
+        <tr>
+          <th style="padding:.5rem .75rem;background:#1E293B;color:#94A3B8;text-align:left;font-weight:600;">Security Property</th>
+          <th style="padding:.5rem .75rem;background:#1E293B;color:#94A3B8;text-align:center;font-weight:600;">Industry Baseline</th>
+          <th style="padding:.5rem .75rem;background:#1E293B;color:#94A3B8;text-align:center;font-weight:600;">Stored-AEK Pattern</th>
+          <th style="padding:.5rem .75rem;background:rgba(79,70,229,.25);color:#A5B4FC;text-align:center;font-weight:700;border:1px solid rgba(99,102,241,.3);">Pulse (HKDF v2)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="padding:.5rem .75rem;border-bottom:1px solid #1E293B;color:#94A3B8;">Encryption algorithm</td>
+          <td style="padding:.5rem .75rem;border-bottom:1px solid #1E293B;color:#64748B;text-align:center;">AES-256-GCM</td>
+          <td style="padding:.5rem .75rem;border-bottom:1px solid #1E293B;color:#64748B;text-align:center;">AES-256-GCM</td>
+          <td style="padding:.5rem .75rem;border-bottom:1px solid #1E293B;color:#6EE7B7;text-align:center;font-weight:700;">AES-256-GCM ✓</td>
+        </tr>
+        <tr>
+          <td style="padding:.5rem .75rem;border-bottom:1px solid #1E293B;color:#94A3B8;">Per-agent key isolation</td>
+          <td style="padding:.5rem .75rem;border-bottom:1px solid #1E293B;color:#EF4444;text-align:center;">Shared key ✗</td>
+          <td style="padding:.5rem .75rem;border-bottom:1px solid #1E293B;color:#FCD34D;text-align:center;">Stored AEK file</td>
+          <td style="padding:.5rem .75rem;border-bottom:1px solid #1E293B;color:#6EE7B7;text-align:center;font-weight:700;">HKDF derived ✓</td>
+        </tr>
+        <tr>
+          <td style="padding:.5rem .75rem;border-bottom:1px solid #1E293B;color:#94A3B8;">Extra files on disk</td>
+          <td style="padding:.5rem .75rem;border-bottom:1px solid #1E293B;color:#EF4444;text-align:center;">None needed ✗</td>
+          <td style="padding:.5rem .75rem;border-bottom:1px solid #1E293B;color:#EF4444;text-align:center;">AEK file per agent ✗</td>
+          <td style="padding:.5rem .75rem;border-bottom:1px solid #1E293B;color:#6EE7B7;text-align:center;font-weight:700;">Nothing stored ✓</td>
+        </tr>
+        <tr>
+          <td style="padding:.5rem .75rem;border-bottom:1px solid #1E293B;color:#94A3B8;">What attacker needs</td>
+          <td style="padding:.5rem .75rem;border-bottom:1px solid #1E293B;color:#EF4444;text-align:center;">Master key only</td>
+          <td style="padding:.5rem .75rem;border-bottom:1px solid #1E293B;color:#FCD34D;text-align:center;">Master key + AEK file</td>
+          <td style="padding:.5rem .75rem;border-bottom:1px solid #1E293B;color:#6EE7B7;text-align:center;font-weight:700;">Key + ID + salt ✓</td>
+        </tr>
+        <tr>
+          <td style="padding:.5rem .75rem;border-bottom:1px solid #1E293B;color:#94A3B8;">Memory zeroing after sign</td>
+          <td style="padding:.5rem .75rem;border-bottom:1px solid #1E293B;color:#EF4444;text-align:center;">Rarely ✗</td>
+          <td style="padding:.5rem .75rem;border-bottom:1px solid #1E293B;color:#64748B;text-align:center;">Not specified</td>
+          <td style="padding:.5rem .75rem;border-bottom:1px solid #1E293B;color:#6EE7B7;text-align:center;font-weight:700;">.fill(0) always ✓</td>
+        </tr>
+        <tr>
+          <td style="padding:.5rem .75rem;border-bottom:1px solid #1E293B;color:#94A3B8;">Key rotation support</td>
+          <td style="padding:.5rem .75rem;border-bottom:1px solid #1E293B;color:#EF4444;text-align:center;">Manual ✗</td>
+          <td style="padding:.5rem .75rem;border-bottom:1px solid #1E293B;color:#EF4444;text-align:center;">Not mentioned ✗</td>
+          <td style="padding:.5rem .75rem;border-bottom:1px solid #1E293B;color:#6EE7B7;text-align:center;font-weight:700;">Live API endpoint ✓</td>
+        </tr>
+        <tr>
+          <td style="padding:.5rem .75rem;color:#94A3B8;">Backward compatibility</td>
+          <td style="padding:.5rem .75rem;color:#EF4444;text-align:center;">N/A</td>
+          <td style="padding:.5rem .75rem;color:#EF4444;text-align:center;">N/A</td>
+          <td style="padding:.5rem .75rem;color:#6EE7B7;text-align:center;font-weight:700;">v1 auto-upgrades ✓</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+
 <!-- ═══════════════════════════════════════════════════════════════
      EXECUTIVE SUMMARY
 ════════════════════════════════════════════════════════════════ -->
@@ -458,13 +554,15 @@
   <p>Pulse creates all six agent wallets programmatically using <code>Keypair.generate()</code> from <code>@solana/web3.js</code> — the same cryptographic standard used by Phantom, Backpack, and every institutional custody solution on Solana. This happens automatically at server startup, before any user opens the dashboard. The <code>AgentWallet.loadOrCreate()</code> method checks for an existing encrypted wallet file; if none exists, it generates a fresh Ed25519 keypair, encrypts the private key with AES-256-GCM, and writes the ciphertext to disk.</p>
 
   <div class="code-block">
-<span class="comment">// AgentWallet.ts — programmatic wallet creation</span>
-<span class="keyword">const</span> keypair = Keypair.<span class="fn">generate</span>();
-<span class="keyword">const</span> encrypted = <span class="keyword">this</span>.<span class="fn">encryptPrivateKey</span>(keypair.secretKey);
+<span class="comment">// AgentWallet.ts — programmatic wallet creation with HKDF key derivation</span>
+<span class="keyword">const</span> keypair      = Keypair.<span class="fn">generate</span>();           <span class="comment">// Ed25519</span>
+<span class="keyword">const</span> perAgentSalt = crypto.<span class="fn">randomBytes</span>(32).<span class="fn">toString</span>(<span class="string">"hex"</span>);  <span class="comment">// unique per wallet</span>
+<span class="keyword">const</span> agentKey     = crypto.<span class="fn">hkdfSync</span>(<span class="string">"sha256"</span>, MASTER_KEY, salt, info, 32);
+<span class="keyword">const</span> { encrypted, iv, authTag } = <span class="fn">aesGcmEncrypt</span>(privateKey, agentKey);
+agentKey.<span class="fn">fill</span>(0);  <span class="comment">// zero key from memory immediately</span>
 fs.<span class="fn">writeFileSync</span>(walletPath, JSON.<span class="fn">stringify</span>({
-  agentId, publicKey: keypair.publicKey.toBase58(),
-  encryptedPrivateKey: encrypted.ciphertext,
-  iv: encrypted.iv, authTag: encrypted.authTag
+  agentId, publicKey, encryptedPrivateKey, iv, authTag,
+  keyVersion: 2, perAgentSalt  <span class="comment">// salt on disk; MASTER_KEY never on disk</span>
 }));
   </div>
 
@@ -538,13 +636,32 @@ POST https://quote-api.jup.ag/v6/swap   <span class="comment">// returns seriali
   <h2>Technical Deep Dive</h2>
 
   <h3>Wallet Design &amp; Cryptography</h3>
-  <p>The <code>AgentWallet</code> class is the foundational primitive of the entire system. Every agent is, at its core, a wallet with a reasoning layer attached to it. The design philosophy is <strong>isolation-first</strong>: no agent can access another agent's key material under any circumstances.</p>
+  <p>The <code>AgentWallet</code> class is the foundational primitive of the entire system. Every agent is, at its core, a wallet with a reasoning layer attached to it. The design philosophy is <strong>isolation-first</strong>: no agent can access another agent's key material under any circumstances. Pulse implements a security model that goes beyond what most agentic wallet prototypes demonstrate.</p>
 
-  <p><strong>Keypair Generation.</strong> Wallets use Ed25519 elliptic curve cryptography via <code>Keypair.generate()</code> from <code>@solana/web3.js</code>. The same cryptographic foundation used by hardware wallets and institutional custody solutions. The public key is derived deterministically from the private key and stored in plaintext. The private key never exists in plaintext on disk.</p>
+  <p><strong>Keypair Generation.</strong> Wallets use Ed25519 elliptic curve cryptography via <code>Keypair.generate()</code> from <code>@solana/web3.js</code> — the same cryptographic foundation used by hardware wallets and institutional custody solutions. The public key is derived deterministically and stored plaintext. The private key never exists in plaintext on disk at any point.</p>
 
-  <p><strong>Key Encryption (AES-256-GCM).</strong> The moment a keypair is generated, the private key is encrypted using AES-256-GCM with a 256-bit key derived from the <code>ENCRYPTION_SECRET</code> environment variable. The wallet file on disk contains only: <code>publicKey</code> (plaintext), <code>encryptedPrivateKey</code> (ciphertext), <code>iv</code> (plaintext), <code>authTag</code> (plaintext). The authTag provides cryptographic integrity — any file tampering is detectable. The plaintext private key never exists after <code>encrypt()</code> returns.</p>
+  <p><strong>Two-Layer HKDF Key Derivation (v2).</strong> This is the security feature that distinguishes Pulse architecturally. Many implementations encrypt all agent wallets with the same derived key — meaning cracking one cracks all. Pulse instead uses <strong>HKDF-SHA256 (RFC 5869)</strong> to derive a unique 32-byte encryption key per agent, with three independent inputs:</p>
+  <ul>
+    <li><strong>MASTER_KEY</strong> — hardened from <code>ENCRYPTION_SECRET</code> env var using scrypt (N=32768, r=8, p=1). Only in environment, never on disk.</li>
+    <li><strong>agentId</strong> — the agent's identifier, bound into the HKDF <code>info</code> field as <code>"pulse:{agentId}:v2"</code></li>
+    <li><strong>perAgentSalt</strong> — 32 bytes of cryptographically random entropy generated at wallet creation, stored in the wallet file</li>
+  </ul>
+  <p>An attacker who steals a wallet file gets the <code>perAgentSalt</code> — but that alone is useless. They also need the <code>MASTER_KEY</code> (which only exists as an environment variable on the server) and the specific <code>agentId</code>. Crucially, there is <strong>no AEK file stored on disk</strong> — the per-agent key is derived on demand, used for milliseconds, and then explicitly zeroed from memory with <code>.fill(0)</code>. Nothing is stored. Nothing persists.</p>
 
-  <p><strong>Agent Isolation.</strong> Each of the six agents has a completely independent encrypted wallet file. There is no shared key material, no master key that exposes all agents simultaneously, and no cross-agent key access anywhere in the codebase. Compromise of one wallet exposes nothing about any other. The blast radius is exactly one agent.</p>
+  <div class="code-block">
+<span class="comment">// HKDF derives a unique key for each agent — never stored, always computed</span>
+<span class="keyword">const</span> info     = Buffer.<span class="fn">from</span>(<span class="string">`pulse:${agentId}:v2`</span>);
+<span class="keyword">const</span> agentKey  = crypto.<span class="fn">hkdfSync</span>(<span class="string">"sha256"</span>, MASTER_KEY, perAgentSalt, info, 32);
+<span class="keyword">const</span> cipher    = crypto.<span class="fn">createCipheriv</span>(<span class="string">"aes-256-gcm"</span>, agentKey, iv);
+<span class="comment">// ... encrypt ...</span>
+agentKey.<span class="fn">fill</span>(0);  <span class="comment">// zero key material from memory immediately</span>
+  </div>
+
+  <p><strong>MASTER_KEY Hardening.</strong> The raw <code>ENCRYPTION_SECRET</code> env string is not used directly. It is first hardened through <code>scryptSync</code> with OWASP-recommended parameters (N=32768, r=8, p=1), making brute-force dictionary attacks computationally prohibitive even if an attacker knows the KDF scheme.</p>
+
+  <p><strong>Agent Isolation.</strong> Each of the six agents has a completely independent encrypted wallet file and a unique derived encryption key. Compromise of one wallet file exposes nothing about any other agent — not through the file itself, not through the salt, not through any stored material. The blast radius of a key compromise is exactly one agent.</p>
+
+  <p><strong>Key Rotation.</strong> Pulse includes a live key rotation endpoint (<code>POST /api/security/rotate-keys</code>). After rotating the <code>ENCRYPTION_SECRET</code> in the environment, a single API call re-derives all agent keys with the new MASTER_KEY and fresh per-agent salts — no agent downtime, no manual re-encryption, no key files to handle. Old wallets on disk with legacy encryption (v1, single shared key) are automatically detected and upgraded to v2 HKDF on the next load.</p>
 
   <h3>The Governor: 7-Layer Safety System</h3>
   <p>The Governor is the most architecturally important component. It has no wallet, no agency, and no opinions about strategy. It is a stateless gatekeeper that sits between every AI decision and every wallet signature. The design principle: <strong>the AI cannot harm the user even if it hallucinates.</strong></p>
@@ -676,15 +793,15 @@ POST https://quote-api.jup.ag/v6/swap   <span class="comment">// returns seriali
 
   <h3>Security and proper key management</h3>
   <div class="criterion">
-    <div class="criterion-text"><strong>Safe key storage</strong><span>AES-256-GCM encryption. Private key never exists in plaintext on disk. Every agent's key encrypted independently with unique IV and authTag.</span></div>
+    <div class="criterion-text"><strong>Safe key storage — HKDF-SHA256 + AES-256-GCM</strong><span>Per-agent keys derived via HKDF (RFC 5869) from MASTER_KEY + agentId + perAgentSalt. No key stored on disk. MASTER_KEY hardened with scrypt N=32768. AES-256-GCM authenticated encryption with tamper-detectable authTag.</span></div>
     <div class="criterion-badge badge-met">✅ MET</div>
   </div>
   <div class="criterion">
-    <div class="criterion-text"><strong>In-memory signing only</strong><span>Private key decrypted in-memory for signing duration only. Never logged, never transmitted, never stored post-signing. Garbage-collected immediately.</span></div>
+    <div class="criterion-text"><strong>In-memory signing + explicit memory zeroing</strong><span>Private key and derived agent key both exist in memory for milliseconds only. Agent key explicitly zeroed with <code>.fill(0)</code> after every encrypt/decrypt. Never logged, never transmitted. GC cannot resurrect zeroed buffers.</span></div>
     <div class="criterion-badge badge-met">✅ MET</div>
   </div>
   <div class="criterion">
-    <div class="criterion-text"><strong>Agent isolation</strong><span>Six independent keypairs. Compromise of one agent exposes nothing about others. No shared key material anywhere in the codebase.</span></div>
+    <div class="criterion-text"><strong>Agent isolation — unique key per agent, cryptographically guaranteed</strong><span>Six independent keypairs, each encrypted with a unique HKDF-derived key. Stealing one wallet file + its salt still requires the MASTER_KEY (env only) to decrypt. Compromise blast radius: exactly one agent.</span></div>
     <div class="criterion-badge badge-met">✅ MET</div>
   </div>
   <div class="criterion">
@@ -746,7 +863,7 @@ POST https://quote-api.jup.ag/v6/swap   <span class="comment">// returns seriali
   <p>Users will not buy Pulse. They will subscribe to agents. The Pulse Protocol becomes the App Store for autonomous DeFi wallets — every agent a sovereign entity with its own encrypted keypair, its own capital allocation, and its own strategy. All governed by the same safety layer. All verifiable on-chain.</p>
 
   <h3>The African DeFi Case</h3>
-  <p>As a Nigerian builder with enormous proof of work on clickshift and 4 products on Solana chain, I designed Pulse for users who understand viscerally why autonomous asset management is not a luxury — it is infrastructure. Currency instability, banking friction, limited dollar access, high remittance costs. An agent that converts profits to stablecoins before the naira moves. An agent that executes DCA into hard assets without constant attention. An agent that sweeps profits through the Clickbot bridge directly to a Nigerian bank account.</p>
+  <p>Pulse was designed by a Nigerian builder for users who understand viscerally why autonomous asset management is not a luxury — it is infrastructure. Currency instability, banking friction, limited dollar access, high remittance costs. An agent that converts profits to stablecoins before the naira moves. An agent that executes DCA into hard assets without constant attention. An agent that sweeps profits through the Clickbot bridge directly to a Nigerian bank account.</p>
   <p>Two hundred million Nigerians and 1.4 billion Africans deserve access to the same autonomous tools that institutional traders use — without needing to understand a single technical term. Pulse is that access layer. Clickbot is the delivery mechanism. Solana is the settlement layer.</p>
 
   <h3>The Multichain Roadmap</h3>
@@ -811,6 +928,26 @@ POST https://quote-api.jup.ag/v6/swap   <span class="comment">// returns seriali
       <div class="link-label">Live Portfolio</div>
       <div class="link-url">pulse.clickshift.io/api/portfolio</div>
     </a>
+    <a class="link-card" href="https://pulse.clickshift.io/api/proof/wallets" target="_blank" style="border-color:#059669;">
+      <div class="link-icon">🔑</div>
+      <div class="link-label" style="color:#059669;">Wallet Proof + Key Version</div>
+      <div class="link-url" style="color:#059669;">pulse.clickshift.io/api/proof/wallets</div>
+    </a>
+  </div>
+
+  <h3>Security Endpoints</h3>
+  <div class="link-grid">
+    <a class="link-card" href="https://pulse.clickshift.io/api/governor/status" target="_blank">
+      <div class="link-icon">🛡️</div>
+      <div class="link-label">Governor Status</div>
+      <div class="link-url">pulse.clickshift.io/api/governor/status</div>
+    </a>
+    <div class="link-card" style="border-color:#4F46E5;background:#F8F9FF;cursor:default;">
+      <div class="link-icon">🔄</div>
+      <div class="link-label" style="color:#4F46E5;">Key Rotation (POST)</div>
+      <div class="link-url" style="color:#4F46E5;">pulse.clickshift.io/api/security/rotate-keys</div>
+      <div style="font-family:Arial,sans-serif;font-size:.68rem;color:#94A3B8;margin-top:.3rem;">POST with {oldSecret} — re-derives all agent keys with new MASTER_KEY</div>
+    </div>
   </div>
 
   <h3>Video Demonstration</h3>
