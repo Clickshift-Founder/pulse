@@ -46,15 +46,33 @@ const WALLETS_DIR   = path.join(process.cwd(), "agent_wallets");
 const ALGORITHM     = "aes-256-gcm";
 const KEY_VERSION   = 2;
 
-// MASTER_KEY: hardened with scrypt so brute-forcing env secret is expensive.
-// This is the ONLY secret needed to derive all agent keys. Never log it.
+// MASTER_KEY: lazy — computed on first wallet operation, not at module load.
+// This prevents blocking the event loop during server startup.
 const MASTER_KEY_RAW = process.env.ENCRYPTION_SECRET || "pulse-change-this-in-production-32!!";
-const MASTER_KEY: Buffer = Buffer.from(crypto.scryptSync(
-  MASTER_KEY_RAW,
-  "pulse-master-key-hardening-salt-v2",
-  32,
-  { N: 32768, r: 8, p: 1 }
-));
+let _masterKey: Buffer | null = null;
+
+function getMasterKey(): Buffer {
+  if (_masterKey) return _masterKey;
+  // scrypt N=16384: secure, ~100ms, does NOT block Railway healthcheck
+  _masterKey = Buffer.from(crypto.scryptSync(
+    MASTER_KEY_RAW,
+    "pulse-master-key-hardening-salt-v2",
+    32,
+    { N: 16384, r: 8, p: 1 }
+  ));
+  return _masterKey;
+}
+
+// HKDF-SHA256 (RFC 5869) — manual implementation for Node.js 14+ compatibility.
+// hkdfSync was only added in Node 16.17, this works everywhere.
+function hkdfSha256(ikm: Buffer, salt: Buffer, info: Buffer, length: number): Buffer {
+  // Extract: PRK = HMAC-SHA256(salt, IKM)
+  const prk = crypto.createHmac("sha256", salt).update(ikm).digest();
+  // Expand: T(1) = HMAC-SHA256(PRK, info || 0x01)
+  const infoWithCounter = Buffer.concat([info, Buffer.from([0x01])]);
+  const okm = crypto.createHmac("sha256", prk).update(infoWithCounter).digest();
+  return okm.slice(0, length);
+}
 
 export interface WalletMetadata {
   agentId:             string;
@@ -163,7 +181,7 @@ export class AgentWallet {
     oldMasterKeyRaw: string, connection: Connection
   ): Promise<{ rotated: string[]; failed: string[] }> {
     const rotated: string[] = [], failed: string[] = [];
-    const oldMasterKey = Buffer.from(crypto.scryptSync(oldMasterKeyRaw, "pulse-master-key-hardening-salt-v2", 32, { N: 32768, r: 8, p: 1 }));
+    const oldMasterKey = Buffer.from(crypto.scryptSync(oldMasterKeyRaw, "pulse-master-key-hardening-salt-v2", 32, { N: 16384, r: 8, p: 1 }));
 
     for (const meta of AgentWallet.listAll()) {
       try {
@@ -303,11 +321,12 @@ export class AgentWallet {
   // MASTER_KEY alone cannot decrypt without the wallet-specific salt.
 
   private static deriveAgentKey(
-    agentId: string, perAgentSalt: string, masterKey: Buffer = MASTER_KEY
+    agentId: string, perAgentSalt: string, masterKey?: Buffer
   ): Buffer {
-    const info = Buffer.from(`pulse:${agentId}:v2`);
+    const key  = masterKey || getMasterKey();
     const salt = Buffer.from(perAgentSalt, "hex");
-    return Buffer.from(crypto.hkdfSync("sha256", masterKey, salt, info, 32));
+    const info = Buffer.from(`pulse:${agentId}:v2`);
+    return hkdfSha256(key, salt, info, 32);
   }
 
   private static encryptV2(
@@ -325,7 +344,7 @@ export class AgentWallet {
 
   private static decryptV2(
     encrypted: string, ivHex: string, authTagHex: string,
-    agentId: string, perAgentSalt: string, masterKey: Buffer = MASTER_KEY
+    agentId: string, perAgentSalt: string, masterKey?: Buffer
   ): string {
     const agentKey = AgentWallet.deriveAgentKey(agentId, perAgentSalt, masterKey);
     const decipher = crypto.createDecipheriv(ALGORITHM, agentKey, Buffer.from(ivHex, "hex"));
