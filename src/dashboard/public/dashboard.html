@@ -444,8 +444,8 @@
 
   function renderAgents(agents){
     const list=document.getElementById('agentList');
-    const ROLE_ICONS={orchestrator:'🧠',dca_agent:'📈',trailing_stop_agent:'📉',scout_agent:'🏹',risk_manager:'🚨',custom:'💸',off_ramp_agent:'🏧',scout_agent:'🔭'};
-    list.innerHTML=agents.map(a=>{\
+    const ROLE_ICONS={orchestrator:'🧠',dca_agent:'📈',trailing_stop_agent:'📉',scout_agent:'🏹',risk_manager:'🚨',custom:'💸'};
+    list.innerHTML=agents.map(a=>{
       const isVault=a.agentId==='orchestrator_main';
       const isProt=PROTECTED.includes(a.agentId);
       const xurl=`https://explorer.solana.com/address/${a.publicKey||''}?cluster=devnet`;
@@ -466,18 +466,6 @@
           <a class="bt-e" href="${xurl}" target="_blank">🔗</a>
           ${!isProt?`<button class="abt bt-k" onclick="sackAgent('${a.agentId}')">✕ Sack</button>`:''}
         </div>
-        ${!isVault?`<div class="fund-row" id="fund-${a.agentId}" style="display:none;margin-top:.4rem;gap:.3rem;align-items:center;">
-          <input type="number" id="fund-amt-${a.agentId}" min="0.001" max="2" step="0.01" value="0.05"
-            style="width:70px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:.2rem .4rem;border-radius:.25rem;font-size:.72rem;font-family:inherit;">
-          <span style="font-size:.68rem;color:var(--muted)">SOL</span>
-          <button class="abt bt-a" style="padding:.2rem .5rem;font-size:.68rem;"
-            onclick="confirmFund('${a.agentId}')">✓ Confirm</button>
-          <button class="abt" style="padding:.2rem .5rem;font-size:.68rem;background:transparent;border-color:var(--border);"
-            onclick="toggleFund('${a.agentId}',false)">✕</button>
-        </div>
-        <button class="abt" id="fundbtn-${a.agentId}"
-          style="margin-top:.35rem;width:100%;background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.3);color:#6EE7B7;font-size:.68rem;"
-          onclick="toggleFund('${a.agentId}',true)">💰 Fund via Orchestrator</button>`:''}
         ${a.active?'<div class="hbbar"><div class="hbfill"></div></div>':''}
         <div class="pk" onclick="copyAddr('${a.publicKey||''}')">
           ${(a.publicKey||'').slice(0,16)}...${(a.publicKey||'').slice(-6)}
@@ -529,45 +517,6 @@
   }
 
   // AGENT ACTIONS
-  function toggleFund(id, show){
-    const row=document.getElementById(`fund-${id}`);
-    const btn=document.getElementById(`fundbtn-${id}`);
-    if(row) row.style.display=show?'flex':'none';
-    if(btn) btn.style.display=show?'none':'block';
-  }
-
-  async function confirmFund(id){
-    const input=document.getElementById(`fund-amt-${id}`);
-    const amt=parseFloat(input?.value||'0.05');
-    if(!amt||amt<=0){ addTx('BLOCK','⛔ Enter a valid SOL amount'); return; }
-
-    const btn=document.querySelector(`#fund-${id} button`);
-    if(btn){ btn.textContent='⏳ Sending...'; btn.disabled=true; }
-
-    try{
-      // Routes through orchestrator — one chain of command
-      // Orchestrator reasons about it, Governor evaluates it, then executes
-      const cmd=`fund agent ${id} with ${amt} SOL`;
-      addTx('CREATE',`🧠 Orchestrator received: "${cmd}"`);
-      const d=await(await fetch('/api/execute',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({command: cmd})
-      })).json();
-
-      if(d.response){
-        addTx('CREATE',`✅ Orchestrator: ${d.response}`);
-      }
-      // Also check if a direct explorer link came back via broadcast
-      toggleFund(id, false);
-      setTimeout(refreshAll, 1500); // refresh balances after tx settles
-    }catch(e){
-      addTx('BLOCK',`❌ Fund failed: ${e.message}`);
-    }finally{
-      if(btn){ btn.textContent='✓ Confirm'; btn.disabled=false; }
-    }
-  }
-
   async function activateAgent(id){
     await fetch(`/api/agents/${id}/activate`,{method:'POST'}).catch(()=>{});
     addTx('CREATE',`▶ ${id} activated — heartbeat starting`); refreshAll();
