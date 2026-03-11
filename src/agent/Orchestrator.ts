@@ -321,6 +321,7 @@ Respond with JSON: { "reasoning": "...", "actions": [{"action": "...", "agentId"
         this.emit("capital_distributed", { agentId, amountSOL: amount, signature: sig, newBalance: newBal });
         break;
       }
+      case "stop_agent": {
         const agent = this.agents[agentId];
         if (agent) {
           if (agent.strategy instanceof DCAStrategy) agent.strategy.stop();
