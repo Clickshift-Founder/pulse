@@ -369,7 +369,7 @@ Respond with JSON: { "reasoning": "...", "actions": [{"action": "...", "agentId"
     const old = this.currentMission;
     this.currentMission = newMission;
     this.missionStartCycle = this.missionCycles;
-    thoughtStream.think("orchestrator", "MISSION" as any, `📡 Mission updated: "${newMission.slice(0, 80)}"`);
+    thoughtStream.think("orchestrator", "PLAN", `📡 Mission updated: "${newMission.slice(0, 80)}"`);
     // Broadcast to all agents via thought stream + event
     for (const agentId of Object.keys(this.agents)) {
       thoughtStream.think(agentId, "READ", `📡 Mission change received: "${newMission.slice(0, 60)}"`);
@@ -465,42 +465,62 @@ Respond with JSON: { "reasoning": "...", "actions": [{"action": "...", "agentId"
 
   async distributeCapital(strategy: "equal" | "role_based" = "role_based"): Promise<{ success: boolean; distributed: Record<string, number>; error?: string }> {
     const vaultBalance = await this.orchestratorWallet.getBalance();
-    const reserveSOL = 0.1; // Keep in vault for operations
+    const reserveSOL = 0.1; // Keep in vault for gas
     const distributable = Math.max(0, vaultBalance - reserveSOL);
 
     if (distributable < 0.01) return { success: false, distributed: {}, error: `Insufficient vault balance: ${vaultBalance.toFixed(4)} SOL` };
 
-    const agents = Object.entries(this.agents);
-    const weights: Record<string, number> = {
-      dca_agent: 0.40,
-      trailing_stop_agent: 0.25,
-      scout_agent: 0.15,
-      risk_manager: 0.05,
-      custom: 0.15,
+    // Exclude vault/orchestrator itself
+    const agents = Object.entries(this.agents).filter(
+      ([agentId]) => agentId !== this.orchestratorWallet.agentId
+    );
+
+    if (agents.length === 0) return { success: false, distributed: {}, error: "No agents registered to receive funds" };
+
+    // Base role weights — role_based distributes more to active trading agents
+    const roleBaseWeights: Record<string, number> = {
+      dca_agent:            4.0,
+      trailing_stop_agent:  2.5,
+      scout_agent:          2.0,
+      risk_manager:         0.5,
+      off_ramp_agent:       1.0,
+      custom:               1.5,  // custom/factory agents get a fair share
     };
+
+    // Calculate total weight sum across ALL registered agents dynamically
+    // This means new agents are always included proportionally
+    const totalWeight = strategy === "equal"
+      ? agents.length
+      : agents.reduce((sum, [, agent]) => sum + (roleBaseWeights[agent.role] || 1.5), 0);
 
     const distributed: Record<string, number> = {};
     let totalSent = 0;
 
-    thoughtStream.plan("orchestrator", `💸 Distributing ${distributable.toFixed(4)} SOL across ${agents.length} agents`);
+    thoughtStream.plan("orchestrator",
+      `💸 Distributing ${distributable.toFixed(4)} SOL across ${agents.length} agents (${strategy} strategy)`
+    );
 
     for (const [agentId, agent] of agents) {
-      if (agentId === this.orchestratorWallet.agentId) continue;
-      const weight = strategy === "equal" ? 1 / agents.length : (weights[agent.role] || 0.10);
-      const amount = parseFloat((distributable * weight).toFixed(4));
+      const weight = strategy === "equal" ? 1 : (roleBaseWeights[agent.role] || 1.5);
+      const proportion = weight / totalWeight;
+      const amount = parseFloat((distributable * proportion).toFixed(4));
       if (amount < 0.001) continue;
       try {
-        await this.orchestratorWallet.sendSOL(agent.wallet.publicKeyString, amount);
+        const sig = await this.orchestratorWallet.sendSOL(agent.wallet.publicKeyString, amount);
         distributed[agentId] = amount;
         totalSent += amount;
-        thoughtStream.execute(agentId, `💰 Received ${amount.toFixed(4)} SOL from vault`);
+        thoughtStream.execute(agentId,
+          `💰 Received ${amount.toFixed(4)} SOL from vault (${(proportion * 100).toFixed(1)}% share) | sig: ${sig.slice(0, 10)}...`
+        );
       } catch (err: any) {
         thoughtStream.error("orchestrator", `Distribution to ${agentId} failed: ${err.message?.slice(0, 50)}`);
       }
     }
 
     this.emit("capital_distributed", { totalSOL: totalSent, agentCount: Object.keys(distributed).length, distributed });
-    thoughtStream.success("orchestrator", `✅ Capital distribution complete: ${totalSent.toFixed(4)} SOL sent to ${Object.keys(distributed).length} agents`);
+    thoughtStream.success("orchestrator",
+      `✅ Capital distribution complete: ${totalSent.toFixed(4)} SOL → ${Object.keys(distributed).length} agents`
+    );
     return { success: true, distributed };
   }
 
@@ -556,4 +576,5 @@ Respond with JSON: { "reasoning": "...", "actions": [{"action": "...", "agentId"
   getAgents() { return this.agents; }
   getVaultAddress(): string { return this.orchestratorWallet.publicKeyString; }
   getVaultBalance(): Promise<number> { return this.orchestratorWallet.getBalance(); }
+  getVaultWallet(): AgentWallet { return this.orchestratorWallet; }
 }

@@ -438,12 +438,21 @@ app.post("/api/factory/spawn", async (req, res) => {
     } else {
       agent = await agentFactory.spawn({ userId, tier: tier as UserTier, roleKey: roleKey || "dca_agent", customName });
     }
+
+    // Always register with orchestrator — wallet was just written to disk by AgentWallet.create()
+    // inside factory.spawn(), so loading it here is guaranteed to succeed.
     if (orchestrator) {
-      try {
-        const wallet = await AgentWallet.load(agent.agentId, connection);
-        orchestrator.registerAgent(wallet, { trackedMints: [] });
-      } catch { /* wallet loading may fail for freshly created agents */ }
+      const wallet = await AgentWallet.load(agent.agentId, connection);
+      orchestrator.registerAgent(wallet, {
+        startHeartbeat: true,
+        heartbeatIntervalMs: agent.heartbeatIntervalMs || 60000,
+        trackedMints: [],
+      });
+      thoughtStream.think("orchestrator", "READ",
+        `🆕 Custom agent registered in swarm: ${agent.agentId} (${agent.roleLabel}) — heartbeat ACTIVE`
+      );
     }
+
     broadcast("agent_spawned", agent);
     res.json({ success: true, agent });
   } catch (err: any) {
@@ -634,6 +643,61 @@ app.post("/api/simulate", (req, res) => {
     metricsEngine.recordGovernorDecision(false);
 
   })().catch((e) => console.error("[Simulate] Error:", e?.message));
+});
+
+// ─── Distribute Capital to ALL agents ────────────────────────────────────────
+
+app.post("/api/agents/distribute", async (req, res) => {
+  if (!orchestrator) return res.status(503).json({ error: "Swarm not ready" });
+  const { strategy = "role_based" } = req.body;
+  const result = await orchestrator.distributeCapital(strategy as "equal" | "role_based");
+  res.json(result);
+});
+
+// ─── Assign Capital to a SPECIFIC agent (for demo: new custom agents) ─────────
+
+app.post("/api/agents/:agentId/fund", async (req, res) => {
+  if (!orchestrator) return res.status(503).json({ error: "Swarm not ready" });
+  const { agentId } = req.params;
+  const { amountSOL } = req.body;
+
+  if (!amountSOL || isNaN(amountSOL) || amountSOL <= 0) {
+    return res.status(400).json({ error: "amountSOL required (e.g. 0.05)" });
+  }
+
+  const agents = orchestrator.getAgents();
+  const agent = agents[agentId];
+  if (!agent) return res.status(404).json({ error: `Agent ${agentId} not in swarm registry` });
+
+  const vaultBalance = await orchestrator.getVaultBalance();
+  if (vaultBalance < amountSOL + 0.002) {
+    return res.status(400).json({ error: `Vault balance too low: ${vaultBalance.toFixed(4)} SOL` });
+  }
+
+  try {
+    thoughtStream.think("orchestrator_main", "EXECUTE",
+      `💸 Assigning ${amountSOL} SOL → ${agentId} (${agent.role})`
+    );
+    const sig = await orchestrator.getVaultWallet().sendSOL(
+      agent.wallet.publicKeyString,
+      parseFloat(amountSOL)
+    );
+    const newBalance = await agent.wallet.getBalance();
+    thoughtStream.success("orchestrator_main",
+      `✅ ${agentId} funded: ${amountSOL} SOL assigned | new balance: ${newBalance.toFixed(4)} SOL | sig: ${sig.slice(0, 12)}...`
+    );
+    broadcast("capital_distributed", { agentId, amountSOL, signature: sig, newBalance });
+    res.json({
+      success: true,
+      agentId,
+      amountSOL,
+      signature: sig,
+      explorerUrl: `https://explorer.solana.com/tx/${sig}?cluster=devnet`,
+      newBalance,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ─── Drain Vault (demo helper — empties all agent wallets back to orchestrator) ─
@@ -851,80 +915,80 @@ app.post("/api/demo/prove", async (_req, res) => {
   }> = [];
 
   try {
-    // Load all 5 agents
-    const [orch, dca, trail, risk, offramp] = await Promise.all([
-      AgentWallet.load("orchestrator_main",   connection),
-      AgentWallet.load("dca_agent_01",        connection),
-      AgentWallet.load("trailing_agent_01",   connection),
-      AgentWallet.load("risk_manager_01",     connection),
-      AgentWallet.load("offramp_agent_01",    connection),
-    ]);
+    const HOP = 0.001;
 
-    const HOP = 0.001; // 0.001 SOL per hop — tiny but real
+    // Build hop chain dynamically from ALL registered agents — custom agents included
+    const registeredAgents = orchestrator.getAgents();
+    const agentIds = Object.keys(registeredAgents).filter(id => id !== "orchestrator_main");
 
-    const hops = [
-      { step: "1. Distribution proof",      from: orch,    to: dca,     label: "orchestrator_main → dca_agent_01"      },
-      { step: "2. Agent-to-agent signing",  from: dca,     to: trail,   label: "dca_agent_01 → trailing_agent_01"      },
-      { step: "3. Autonomous relay",        from: trail,   to: risk,    label: "trailing_agent_01 → risk_manager_01"   },
-      { step: "4. Cross-agent transfer",    from: risk,    to: offramp, label: "risk_manager_01 → offramp_agent_01"   },
-      { step: "5. Off-ramp return",         from: offramp, to: orch,    label: "offramp_agent_01 → orchestrator_main"  },
-    ];
-
-    for (const hop of hops) {
+    const orchWallet = await AgentWallet.load("orchestrator_main", connection);
+    const subWallets: AgentWallet[] = [];
+    for (const agentId of agentIds) {
       try {
-        // Check sender has enough
+        subWallets.push(await AgentWallet.load(agentId, connection));
+      } catch {
+        thoughtStream.think("orchestrator_main", "ALERT",
+          `⚠️ Skipping ${agentId} from proof chain — wallet file not found`);
+      }
+    }
+
+    if (subWallets.length === 0) {
+      return res.json({
+        success: false,
+        summary: { note: "No agent wallets found — fund vault and distribute capital first" },
+        transactions: [], explorerLinks: [],
+      });
+    }
+
+    // Chain: orch → sub[0] → sub[1] → ... → sub[N] → orch
+    const chain: Array<{ from: AgentWallet; to: AgentWallet; label: string }> = [];
+    chain.push({ from: orchWallet, to: subWallets[0], label: `orchestrator_main → ${subWallets[0].agentId}` });
+    for (let i = 0; i < subWallets.length - 1; i++) {
+      chain.push({ from: subWallets[i], to: subWallets[i + 1], label: `${subWallets[i].agentId} → ${subWallets[i+1].agentId}` });
+    }
+    chain.push({ from: subWallets[subWallets.length - 1], to: orchWallet, label: `${subWallets[subWallets.length-1].agentId} → orchestrator_main` });
+
+    thoughtStream.think("orchestrator_main", "EXECUTE",
+      `⚡ Starting on-chain proof: ${chain.length} hops across ${subWallets.length + 1} agents`);
+
+    for (let i = 0; i < chain.length; i++) {
+      const hop = chain[i];
+      const stepLabel = `${i + 1}. ${hop.label}`;
+      try {
         const bal = await hop.from.getBalance();
         if (bal < HOP + 0.001) {
-          results.push({
-            step: hop.step, from: hop.from.agentId, to: hop.to.agentId,
-            amount: HOP, signature: null, status: "skipped",
-            explorerTx: "",
-            error: `Insufficient balance: ${bal.toFixed(5)} SOL`,
-          });
-          thoughtStream.think(hop.from.agentId, "OBSERVE",
-            `⚠️ ${hop.step}: balance too low (${bal.toFixed(5)} SOL) — skipping hop`);
+          results.push({ step: stepLabel, from: hop.from.agentId, to: hop.to.agentId,
+            amount: HOP, signature: null, status: "skipped", explorerTx: "",
+            error: `Insufficient balance: ${bal.toFixed(5)} SOL` });
+          thoughtStream.think(hop.from.agentId, "ALERT",
+            `⚠️ Hop ${i+1}: balance too low (${bal.toFixed(5)} SOL) — skipping`);
           continue;
         }
 
         thoughtStream.think(hop.from.agentId, "EXECUTE",
-          `⚡ Signing real devnet transaction: ${hop.label} (${HOP} SOL)`);
-
+          `⚡ Signing real devnet tx: ${hop.label} (${HOP} SOL)`);
         const sig = await hop.from.sendSOL(hop.to.publicKeyString, HOP);
-
         const explorerTx = `https://explorer.solana.com/tx/${sig}${cluster}`;
 
-        results.push({
-          step: hop.step, from: hop.from.agentId, to: hop.to.agentId,
-          amount: HOP, signature: sig, status: "confirmed", explorerTx,
-        });
+        results.push({ step: stepLabel, from: hop.from.agentId, to: hop.to.agentId,
+          amount: HOP, signature: sig, status: "confirmed", explorerTx });
 
         thoughtStream.success(hop.from.agentId,
-          `✅ Real tx confirmed: ${sig.slice(0, 16)}... → ${explorerTx}`);
+          `✅ Real tx confirmed: ${sig.slice(0, 16)}... | ${explorerTx}`);
 
-        // Broadcast to dashboard tx log with real explorer link
         broadcast("dca_execution", {
           agentId: hop.from.agentId,
-          execution: {
-            round: results.length,
-            amountSpent: HOP,
-            amountAcquired: 0,
-            token: "SOL (on-chain proof)",
-            signature: sig,
-            note: hop.step,
-          }
+          execution: { round: results.length, amountSpent: HOP, amountAcquired: 0,
+            token: "SOL (on-chain proof)", signature: sig, note: stepLabel }
         });
 
-        // Small delay between hops so RPC doesn't rate-limit
         await new Promise(r => setTimeout(r, 1200));
 
       } catch (hopErr: any) {
-        results.push({
-          step: hop.step, from: hop.from.agentId, to: hop.to.agentId,
+        results.push({ step: stepLabel, from: hop.from.agentId, to: hop.to.agentId,
           amount: HOP, signature: null, status: "failed", explorerTx: "",
-          error: hopErr.message,
-        });
-        thoughtStream.think(hop.from.agentId, "ERROR",
-          `❌ Hop failed: ${hopErr.message}`);
+          error: hopErr.message });
+        thoughtStream.think(hop.from.agentId, "ERROR", `❌ Hop failed: ${hopErr.message}`);
       }
     }
 
@@ -933,24 +997,23 @@ app.post("/api/demo/prove", async (_req, res) => {
     const failed    = results.filter(r => r.status === "failed");
 
     thoughtStream.success("orchestrator_main",
-      `🎯 On-chain proof complete: ${confirmed.length} real txs confirmed, ${skipped.length} skipped (low balance), ${failed.length} failed`);
+      `🎯 Proof complete: ${confirmed.length} real txs across ${chain.length} hops (${subWallets.length + 1} agents including custom)`);
 
     res.json({
       success: true,
       summary: {
-        totalHops: hops.length,
-        confirmed: confirmed.length,
-        skipped: skipped.length,
-        failed: failed.length,
+        totalHops: chain.length, totalAgents: subWallets.length + 1,
+        confirmed: confirmed.length, skipped: skipped.length, failed: failed.length,
         note: confirmed.length === 0
-          ? "No hops confirmed — fund vault and distribute capital first, then run prove again"
-          : `${confirmed.length} autonomous agent transactions confirmed on Solana devnet`,
+          ? "No hops confirmed — fund vault and distribute capital first"
+          : `${confirmed.length} autonomous transactions confirmed on Solana devnet`,
       },
       bountyEvidence: {
         criterion: "Automated transaction signing without manual input",
-        proof: "Each hop was signed by the sending agent's encrypted keypair — no human interaction",
-        keyManagement: "AES-256-GCM encrypted keypairs, decrypted in-memory for signing only",
+        proof: "Each hop signed by the sending agent's HKDF-derived keypair — no human interaction",
+        keyManagement: "HKDF-SHA256 per-agent key derivation + AES-256-GCM — private key never on disk",
         network: "Solana devnet",
+        agentsParticipating: [orchWallet.agentId, ...subWallets.map(w => w.agentId)],
       },
       transactions: results,
       explorerLinks: confirmed.map(r => r.explorerTx),
@@ -960,6 +1023,7 @@ app.post("/api/demo/prove", async (_req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // ─── Catch-all → serve landing page ──────────────────────────────────────────
 

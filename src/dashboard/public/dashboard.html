@@ -406,8 +406,12 @@
     el.className=`te t-${t.type||'OBSERVE'}`;
     const tm=new Date(t.timestamp||Date.now()).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
     el.innerHTML=`<div class="ti2">${ICONS[t.type]||'·'}</div><div class="tb"><div class="tag-a">${t.agentId}</div><div class="tm">${esc(t.message)}</div></div><div class="tt">${tm}</div>`;
-    s.appendChild(el); s.scrollTop=s.scrollHeight;
-    if(s.children.length>400) s.removeChild(s.firstChild);
+    s.appendChild(el);
+    // Only auto-scroll if user is near the bottom (not manually reading)
+    const isNearBottom = s.scrollHeight - s.scrollTop - s.clientHeight < 80;
+    if(isNearBottom) s.scrollTop=s.scrollHeight;
+    // Keep DOM lean — max 80 thoughts visible
+    while(s.children.length>80) s.removeChild(s.firstChild);
   }
   function clearThoughts(){document.getElementById('ts').innerHTML=''; tTotal=0; set('sThoughts','0'); document.getElementById('tcount').textContent='0 thoughts';}
   function setFilter(id){filter=id; clearThoughts();}
