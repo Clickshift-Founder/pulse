@@ -179,7 +179,8 @@ Your agents: ${JSON.stringify(
 
 Portfolio: ${JSON.stringify(portfolioContext, null, 2)}
 
-You can execute: start_dca, stop_dca, start_trailing_stop, stop_agent, check_rug_exposure, status_report, none.
+You can execute: start_dca, stop_dca, start_trailing_stop, stop_agent, fund_agent, check_rug_exposure, status_report, none.
+fund_agent params: { agentId: "target_agent_id", amountSOL: 0.05 } — transfers SOL from vault to that agent.
 Always reason about risk. Prioritize capital preservation. Never risk more than 50% in one agent.
 
 Respond with JSON: { "reasoning": "...", "actions": [{"action": "...", "agentId": "...", "params": {...}}], "response": "human-friendly reply" }`;
@@ -200,6 +201,10 @@ Respond with JSON: { "reasoning": "...", "actions": [{"action": "...", "agentId"
       let parsed: any = {};
       try { parsed = JSON.parse(responseText); } catch { return "Processing error. Try again."; }
 
+      const responseText2 = typeof parsed.response === "string"
+        ? parsed.response
+        : JSON.stringify(parsed.response || "Done.");
+
       if (parsed.actions) {
         for (const action of parsed.actions) {
           thoughtStream.plan("orchestrator", `Planned action: ${action.action} on ${action.agentId || "swarm"}`);
@@ -207,7 +212,7 @@ Respond with JSON: { "reasoning": "...", "actions": [{"action": "...", "agentId"
         }
       }
 
-      thoughtStream.success("orchestrator", `Command processed: ${parsed.response?.slice(0, 80)}`);
+      thoughtStream.success("orchestrator", `Command processed: ${responseText2.slice(0, 80)}`);
 
       const logEntry: OrchestratorAction = {
         action: parsed.actions?.[0]?.action || "none",
@@ -218,7 +223,7 @@ Respond with JSON: { "reasoning": "...", "actions": [{"action": "...", "agentId"
       this.actionLog.push(logEntry);
       this.emit("action", logEntry);
 
-      return parsed.response || "Done.";
+      return responseText2;
     } catch (err: any) {
       thoughtStream.error("orchestrator", `OpenAI error: ${err.message?.slice(0, 80)}`);
       return `Error processing command: ${err.message}`;
@@ -295,7 +300,27 @@ Respond with JSON: { "reasoning": "...", "actions": [{"action": "...", "agentId"
         }
         break;
       }
-      case "stop_agent": {
+      case "fund_agent": {
+        // Orchestrator assigns capital to a specific agent from the vault
+        const targetAgent = this.agents[agentId];
+        if (!targetAgent) {
+          thoughtStream.error("orchestrator", `fund_agent: agent ${agentId} not found in registry`);
+          return;
+        }
+        const amount = parseFloat(params?.amountSOL || params?.amount || 0.05);
+        const vaultBal = await this.orchestratorWallet.getBalance();
+        if (vaultBal < amount + 0.01) {
+          thoughtStream.alert("orchestrator",
+            `⛔ Cannot fund ${agentId}: vault has ${vaultBal.toFixed(4)} SOL, need ${(amount + 0.01).toFixed(4)}`);
+          return;
+        }
+        const sig = await this.orchestratorWallet.sendSOL(targetAgent.wallet.publicKeyString, amount);
+        const newBal = await targetAgent.wallet.getBalance();
+        thoughtStream.success("orchestrator",
+          `✅ Orchestrator funded ${agentId}: ${amount} SOL assigned | new balance: ${newBal.toFixed(4)} SOL | sig: ${sig.slice(0,12)}...`);
+        this.emit("capital_distributed", { agentId, amountSOL: amount, signature: sig, newBalance: newBal });
+        break;
+      }
         const agent = this.agents[agentId];
         if (agent) {
           if (agent.strategy instanceof DCAStrategy) agent.strategy.stop();
