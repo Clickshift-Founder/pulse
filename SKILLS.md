@@ -1,254 +1,271 @@
-# SKILLS.md — Pulse Agentic Wallet OS
-> Machine-readable capability manifest. AI agents and external systems parse this file
-> to understand how to integrate with, extend, or consume the Pulse protocol.
-
-## Identity
-**System:** Pulse — Agentic Wallet Operating System  
-**Protocol:** clickshift.io/pulse  
-**Built on:** Solana (devnet · mainnet-ready)  
-**Architecture:** Heartbeat — agents wake, think, plan, execute, sleep autonomously  
-**Version:** 2.0.0  
-**Live endpoint:** https://pulse.clickshift.io  
-**Wallet proof:** https://pulse.clickshift.io/api/proof/wallets
+# Pulse — Complete User Guide & Journey
+## From First Contact to Running Autonomous Agents
 
 ---
 
-## Active Agent Swarm
+## What is Pulse?
 
-Six independent agents run simultaneously. Each has its own encrypted Solana wallet,
-its own capital allocation, and its own autonomous heartbeat cycle.
+Pulse is an **Agentic Wallet OS** on Solana. You connect your existing Phantom wallet, and Pulse creates a private fleet of AI-powered "sub-wallets" that trade, DCA, protect your positions, and sweep profits — all autonomously, without you needing to click a button.
 
-| Agent ID | Role | Heartbeat | Wallet |
-|---|---|---|---|
-| `orchestrator_main` | AI brain + vault. Receives commands, coordinates swarm | Continuous | Protected |
-| `dca_agent_01` | Dollar-cost averages into target tokens via Jupiter V6 | Every 45s | Independent |
-| `trailing_agent_01` | Monitors price peaks, fires exit tx when drawdown exceeds threshold | Every 60s | Independent |
-| `scout_agent_01` | Scans Raydium for new pools, runs rug filters, flags opportunities | Every 90s | Independent |
-| `risk_manager_01` | RugCheck.xyz scans, concentration limits, can halt other agents | Every 75s | Protected |
-| `off_ramp_agent_01` | Monitors P&L, sweeps profit to cold wallet when threshold hit | Every 120s | Independent |
+Think of it as hiring a 24/7 trading desk that never sleeps, never panics, and can't be bribed or manipulated. But you set the rules, and the Governor makes sure the AI follows them.
 
 ---
 
-## Core Skills
+## The One-Sentence Pitch
 
-### WALLET_CREATE
-Programmatically creates a new Solana wallet (Ed25519 keypair), encrypts the private key
-with AES-256-GCM, and registers the agent into the live swarm immediately.
-```
-POST /api/agents/create
-Body: { "role": "dca_agent|trailing_stop_agent|scout_agent|risk_manager|custom", "agentId": "optional" }
-Response: { "agentId": "...", "publicKey": "...", "explorerUrl": "..." }
-```
-
-### WALLET_PROOF
-Returns all active agent wallet public addresses with Solana Explorer links.
-Use this to verify on-chain that every agent holds real SOL.
-```
-GET /api/proof/wallets
-Response: { "agents": [{ "agentId": "...", "publicKey": "...", "balance": 0.168, "explorerUrl": "..." }] }
-```
-
-### NATURAL_LANGUAGE_EXECUTE
-Send any instruction in plain English. The Orchestrator AI reasons about
-the current portfolio state and executes autonomously. No structured commands required.
-```
-POST /api/execute
-Headers: { "x-pulse-secret": "<secret>", "Content-Type": "application/json" }
-Body: { "command": "Start DCA on BONK with 0.01 SOL every 5 minutes" }
-Response: { "response": "...", "actionsPlanned": [...], "governorApproved": true }
-```
-
-### PORTFOLIO_STATUS
-```
-GET /api/portfolio
-Response: { "totalPortfolioSOL": 1.24, "agentCount": 6, "agents": [...], "recentThoughts": [...] }
-```
-
-### MISSION_UPDATE
-Change the active mission directive. All agents receive and acknowledge on next heartbeat cycle.
-No restart required.
-```
-POST /api/mission
-Body: { "mission": "Accumulate SOL aggressively. DCA into BONK daily. Protect 30% as vault reserve." }
-```
-
-### AGENT_LIFECYCLE
-Full lifecycle management for non-protected agents.
-```
-POST /api/agents/:agentId/activate     — start heartbeat
-POST /api/agents/:agentId/sleep        — pause heartbeat
-POST /api/agents/:agentId/recall       — return agent's SOL to vault (real on-chain tx)
-DELETE /api/agents/:agentId/sack       — terminate agent, recall funds, deregister
-POST /api/agents/:agentId/revive       — reload wallet from disk, re-register, restart heartbeat
-```
-
-### CAPITAL_DISTRIBUTION
-```
-POST /api/agents/distribute            — split vault SOL across all active agents
-POST /api/vault/drain                  — recall all agent SOL back to vault
-```
-
-### ON_CHAIN_PROOF
-Executes 5 real devnet SOL micro-transfers between agent wallets in sequence.
-Each hop produces a real signature verifiable on Solana Explorer.
-```
-POST /api/demo/prove
-Response: { "signatures": [...], "explorerLinks": [...] }
-```
-
-### THOUGHT_STREAM
-Real-time agent consciousness stream via WebSocket.
-Every agent thought — wake, read, think, plan, execute, sleep — is broadcast live.
-```
-WebSocket: wss://pulse.clickshift.io
-Event: { "type": "thought", "data": { "agentId": "...", "type": "WAKE|READ|THINK|PLAN|EXECUTE|SLEEP|ALERT|SUCCESS|ERROR", "message": "...", "timestamp": "..." } }
-```
-
-All broadcast event types:
-```
-thought | heartbeat_cycle | dca_execution | stop_triggered | agent_registered |
-agent_sacked | capital_distributed | mission_changed | emergency_exit_required |
-offramp_executed | swarm_initialized | governor_blocked
-```
-
-### TOKEN_PRICE
-```
-GET /api/price/:mintAddress
-Response: { "mint": "...", "price": 178.82, "timestamp": "..." }
-```
-
-### THOUGHT_HISTORY
-```
-GET /api/thoughts?count=50
-GET /api/thoughts/:agentId
-```
-
-### GOVERNOR_STATUS
-```
-GET /api/governor/status
-Response: { "spentToday": 0.03, "dailyLimit": 2.0, "totalApproved": 14, "totalBlocked": 2, "approvalRate": "87.5%" }
-```
-
-### SYSTEM_HEALTH
-```
-GET /api/health
-Response: { "status": "ok", "initialized": true, "agents": 6, "uptime": 3847, "network": "devnet" }
-```
+> You deposit SOL. Pulse's agents grow it. You watch them think in real-time.
 
 ---
 
-## Heartbeat Architecture
+## User Journey — End to End
 
-Every agent runs an independent HeartbeatEngine. On each cycle:
+### Stage 1: Discovery
 
-1. **WAKE** — Agent activates, logs cycle number, checks running state
-2. **READ** — Reads `HEARTBEAT.md` directives and fetches live market prices
-3. **THINK** — Routes to Orchestrator with full portfolio context for AI reasoning
-4. **PLAN** — Decides actions (rule-based fallback if no OpenAI key present)
-5. **EXECUTE** — Submits to the Governor for 7-layer safety check, then signs and broadcasts
-6. **SLEEP** — Logs result, emits `cycle_complete`, waits for next interval
-
-To change agent behavior without restart: edit `HEARTBEAT.md`. Changes take effect on next cycle.
+**How users find Pulse:**
+- Superteam bounty announcement (initial launch credibility)
+- `pulse.clickshift.io` — your product domain
+- Your existing Clickbot Telegram community — existing users who already trust you
+- Twitter/X: "Watch AI agents trade on Solana in real-time" + screen recording of the thought stream
+- Word of mouth: "There's a dashboard where you can literally watch bots think"
 
 ---
 
-## Security Architecture
+### Stage 2: First Contact — Connecting to Pulse
 
-### Key Management
-- All private keys encrypted with **AES-256-GCM** at rest
-- Private key decrypted **in-memory only** for the duration of signing — never persisted in plaintext
-- Each agent has a **completely independent keypair** — compromise of one exposes nothing about others
-- Wallet files stored in `agent_wallets/` — back up this directory and your `ENCRYPTION_SECRET`
+1. User opens `pulse.clickshift.io`
+2. They see the live dashboard with the thought stream already running (swarm is public-visible)
+3. They see agents thinking in real-time — WAKE, READ, THINK, EXECUTE, SLEEP — before even logging in
+4. A banner says: **"These are Pulse's demo agents. Connect your wallet to get your own."**
+5. User clicks **"Connect Wallet"** button (top right)
 
-### The Governor (7-Layer Safety System)
-Every transaction — without exception — must pass all seven layers before any SOL moves:
+**Currently in the code:** Wallet connection is NOT yet integrated in the UI. It exists as a concept in `UserSession.ts` but there's no Phantom adapter in the dashboard yet. You need `@solana/wallet-adapter-react` for this — it's the standard Solana wallet connection library. For the bounty demo, this is fine to skip. For production, add it in the next sprint.
 
-| Layer | Rule |
-|---|---|
-| 1 | Agent cannot spend more than it holds |
-| 2 | No single transaction exceeds 0.5 SOL |
-| 3 | Maximum 2.0 SOL per day across all agents |
-| 4 | Slippage must stay below 3% |
-| 5 | Pool must meet minimum liquidity threshold |
-| 6 | Token must not appear on blacklist |
-| 7 | RugCheck.xyz score must be below 500/1000 |
-
-The Governor also has fund recall authority — it can instruct any agent to return all SOL to the vault instantly.
+**For the bounty demo:** The demo shows YOUR agents. Judges see the thought stream. You can describe multi-user as the roadmap.
 
 ---
 
-## Available Strategies
+### Stage 3: Wallet Authentication (No Password, No Email)
 
-| Strategy | Agent | Trigger | Description |
-|---|---|---|---|
-| DCA | `dca_agent_01` | Heartbeat interval | Buy target token via Jupiter V6 every N seconds |
-| Trailing Stop | `trailing_agent_01` | Price poll | Autonomous exit when drawdown from peak exceeds threshold |
-| Rug Exit | `risk_manager_01` | Heartbeat | Auto-exit position if RugCheck score spikes above threshold |
-| Scout + Sniper | `scout_agent_01` | Heartbeat | Scan new pools, rug-filter, flag clean opportunities |
-| Off-Ramp Sweep | `off_ramp_agent_01` | P&L threshold | Sweep profits to cold wallet when gain % target is hit |
-| Custom | Any spawned agent | Configurable | Factory-spawned agents with arbitrary strategy and heartbeat |
+The moment they click "Connect Wallet":
 
----
-
-## Emergency Controls
-
-Edit `HEARTBEAT.md` and set any of these flags. Agent picks up changes on next heartbeat — no restart:
-```
-EMERGENCY_STOP: true         # Halts all agents immediately on next cycle
-EMERGENCY_EXIT_ALL: true     # Exits all open positions
-PAUSE_DCA: true              # Pauses DCA without stopping other strategies
-```
-
-Or via API:
-```
-POST /api/execute
-Body: { "command": "Emergency stop. Halt all agents and return funds to vault." }
-```
+1. Phantom (or Solflare/Backpack) pops up asking to connect — standard wallet approval
+2. Once connected, Pulse asks them to **sign a message** (not a transaction — no SOL spent):
+   ```
+   Sign to log into Pulse
+   Nonce: pulse-login-abc123-1234567890
+   ```
+3. This signature proves they own the wallet — it's their identity
+4. Pulse creates their session — **no email, no password, no KYC**
+5. Their wallet address IS their user ID — full DeFi-native auth
 
 ---
 
-## External Integration Pattern (Telegram / Any App)
+### Stage 4: Getting an Agent Swarm
+
+Once logged in, Pulse automatically spawns their personal agent swarm:
+
+**Free tier:**
+- 1 Orchestrator wallet (AI brain)
+- 1 DCA Agent wallet
+- Total: 2 agent wallets
+
+**Pro tier ($29/mo or in-app PULSE token):**
+- + Trailing Stop Agent
+- + Risk Manager
+- Faster heartbeat (1 min vs 5 min)
+
+The user sees their 2-5 agent wallets appear in the dashboard, each with a Solana address and 0 SOL balance.
+
+---
+
+### Stage 5: Funding — Vault vs Agent Wallets
+
+**The key question: "Do I fund each agent or just one place?"**
+
+**Answer: You fund the VAULT only. Pulse handles the rest.**
+
+**Flow:**
+1. User goes to "Fund Vault" in the dashboard
+2. They send SOL from their Phantom wallet to their **Vault address** (displayed in UI)
+   - The Vault is a read-only wallet Pulse shows them — it's just a Solana address
+   - They can send from Phantom directly: copy address, paste in Phantom, send
+3. Pulse's Orchestrator Agent detects the Vault balance
+4. It distributes capital to sub-agents based on their config:
+   - 40% stays in Vault (Governor enforced — AI can't touch the reserve)
+   - 30% → DCA Agent
+   - 20% → Trailing Stop Agent
+   - 10% → Scout/Risk
+
+**Security:** The user keeps custody of the Vault address. Pulse agents only control the sub-wallets it created. If the user wants to exit completely, they can always drain the sub-wallets by adding their own wallet to the whitelist or using the emergency stop.
+
+**Minimum to start:** 0.2 SOL recommended (covers gas + meaningful DCA positions)
+
+---
+
+### Stage 6: Configuring Their Strategy
+
+Users configure strategy through the **dashboard UI** (not by editing a file):
+
+```
+┌─────────────────────────────────────────────┐
+│  My Strategy Settings                        │
+│                                              │
+│  Mission: [Grow portfolio 5% this week ____] │
+│                                              │
+│  DCA Target: [BONK ▼]                        │
+│  DCA Amount: [0.01] SOL per round            │
+│  DCA Interval: [Every 5 minutes ▼]           │
+│                                              │
+│  Trailing Stop: [7]% below peak              │
+│  Rug Check: [ON ●]                           │
+│  Max Price Impact: [3]%                      │
+│                                              │
+│  Off-Ramp at: [15]% profit                   │
+│  Off-Ramp to: [your-cold-wallet ____]         │
+│                                              │
+│  [Save Settings]  [Emergency Stop 🚨]         │
+└─────────────────────────────────────────────┘
+```
+
+When they hit Save, it updates their `UserConfig` in the database. The next heartbeat cycle, their agents pick up the new rules. **This is the per-user equivalent of editing HEARTBEAT.md.**
+
+---
+
+### Stage 7: Watching Agents Work
+
+The main dashboard shows:
+- **Left panel**: Their agents, balances, status badges
+- **Center**: The thought stream — their agents' internal monologue, live
+- **Right**: Command center — natural language control
+
+They'll see thoughts like:
+```
+⏰ [their_dca_agent] Waking up. Cycle #12.
+📖 [their_dca_agent] Reading strategy config...
+📊 [their_dca_agent] Portfolio: 0.3 SOL (~$54). SOL at $180.
+🤔 [their_dca_agent] Thinking... Mission: "Grow 5% this week"
+📋 [their_dca_agent] Plan: Execute DCA round. 0.01 SOL → BONK
+🛡️ [their_dca_agent] Governor: Checking 7 safety rules...
+✅ [their_dca_agent] Governor APPROVED. All checks passed.
+⚡ [their_dca_agent] Executing swap via Jupiter...
+✅ [their_dca_agent] DCA Round 12 complete. Acquired 420,000 BONK
+💤 [their_dca_agent] Sleeping 60 seconds.
+```
+
+Every transaction links to Solana Explorer so they can verify it's real.
+
+---
+
+### Stage 8: Natural Language Commands
+
+They can type anything in the command box:
+- *"How is my portfolio doing?"*
+- *"Stop DCA until tomorrow"*
+- *"I'm nervous about the market — reduce risk exposure"*
+- *"Take profits now and sweep to my cold wallet"*
+
+The AI Orchestrator reasons about their specific portfolio and acts.
+
+---
+
+### Stage 9: Off-Ramping (Profits Back to Reality)
+
+When profit target is hit:
+1. Off-Ramp Agent detects portfolio is up 15%
+2. It logs: `🎯 PROFIT TARGET HIT! +15.3% gain. Sweeping 80% of profits to cold wallet...`
+3. SOL is sent autonomously to their designated cold wallet
+4. **To connect to Clickbot's bank offramp**: cold wallet → Clickbot → bank bridge
+   - This is the integration point: Pulse sends to an address that Clickbot monitors
+   - Clickbot detects incoming SOL and triggers the bank offramp process
+   - Users get their profit in their bank account without touching anything
+
+---
+
+## Clickbot Integration — The Right Answer
+
+**Should you integrate Clickbot INTO Pulse or build capabilities into Pulse?**
+
+**Keep them separate, but wire them together at the seams.** Here's why:
+
+Clickbot is your bank bridge — that's a distinct, regulated-adjacent product with its own user base, trust, and flows. Pulse is autonomous DeFi strategy execution. They serve adjacent use cases but are architecturally different.
+
+**The integration points:**
+1. **Off-ramp**: Pulse sweeps profits to a Clickbot-monitored wallet → Clickbot handles the fiat conversion
+2. **Funding**: Clickbot users can "Fund Pulse" by moving SOL from their Clickbot wallet to their Pulse Vault address
+3. **Reporting**: Clickbot can call `pulse.clickshift.io/api/portfolio` to show users their Pulse balance inside Telegram
+
+**In Clickbot, add:**
 ```javascript
-// Clickbot integration — live in production at @clicksolbot
-const response = await axios.post('https://pulse.clickshift.io/api/execute', {
-  command: userMessage   // plain English — AI handles the rest
-}, {
+// When user types /pulse_status in Telegram:
+const portfolio = await axios.get('https://pulse.clickshift.io/api/portfolio', {
   headers: { 'x-pulse-secret': process.env.PULSE_SECRET }
 });
-bot.sendMessage(chatId, response.data.response);
+bot.sendMessage(chatId, `Your Pulse portfolio: ${portfolio.data.totalPortfolioSOL} SOL`);
+
+// When user says "send profits to bank":
+// 1. Clickbot reads the Pulse off-ramp wallet balance
+// 2. Triggers your existing bank bridge
+// Done — no code changes in Pulse needed
 ```
 
-### Live Telegram Commands (production, @clicksolbot)
-```
-/pulse                    — full swarm status
-/pulse_deploy [command]   — natural language instruction to orchestrator
-/pulse_mission [text]     — update active mission directive
-/pulse_fund               — get vault address to deposit SOL
-/pulse_agents             — all agent wallets + balances + Explorer links
-/pulse_recall [agentId]   — recall SOL from agent to vault
-/pulse_sack [agentId]     — terminate agent and recall funds
-/pulse_sim                — trigger demonstration simulation
-/pulse_trades             — wallet proof + on-chain transaction links
-```
+This preserves each product's identity while creating a unified experience for your users.
 
 ---
 
-## Repository Structure
+## How External Agents Use Pulse
+
+Any AI agent (not just humans) can use Pulse as their wallet infrastructure:
+
+```python
+# An AI agent that wants to execute DeFi strategies
+import requests
+
+class PulseClient:
+    def __init__(self, base_url, secret):
+        self.base = base_url
+        self.headers = {'x-pulse-secret': secret, 'Content-Type': 'application/json'}
+
+    def command(self, instruction: str) -> str:
+        r = requests.post(f'{self.base}/api/execute',
+                         json={'command': instruction},
+                         headers=self.headers)
+        return r.json()['response']
+
+    def portfolio(self) -> dict:
+        return requests.get(f'{self.base}/api/portfolio', headers=self.headers).json()
+
+# Usage by any AI agent:
+pulse = PulseClient('https://pulse.clickshift.io', 'your-secret')
+pulse.command('Start DCA on BONK with 0.01 SOL every 5 minutes')
+pulse.command('Set trailing stop at 7% on all positions')
+print(pulse.portfolio())
 ```
-src/
-  agent/        — Orchestrator, MetricsEngine, SimulationEngine, AgentFactory
-  heartbeat/    — HeartbeatEngine, ThoughtStream, AgentPersonality
-  wallet/       — AgentWallet (AES-256-GCM), key management
-  integrations/ — JupiterSwap (V6), RugCheck, clickbot/pulse-bridge
-  api/          — server.ts, Governor, all REST + WebSocket endpoints
-  dashboard/
-    public/     — dashboard.html, graph.html, metrics.html, docs.html, submission.html
-HEARTBEAT.md    — live directive file, read by all agents every cycle
-SKILLS.md       — this file
+
+New agent roles that don't exist yet (self-generating engine):
 ```
+POST /api/agents/create
+{ "role": "sniper_agent", "agentId": "user_sniper_v1" }
+```
+→ Pulse spawns a new wallet with a custom role. The orchestrator can assign strategies to it. This is the self-generating engine — any role, any time, on demand.
 
 ---
 
-*Pulse is the agentic wallet infrastructure layer for Solana.*  
-*Built by clickshift.io — the brain that powers autonomous agents onchain for profit.*  
-*Mainnet roadmap: Solana → Base → chain-abstracted.*
+## Summary: What Users Need to Do
+
+| Step | Action                                     | Time       |
+|------|--------------------------------------------|---------   |
+| 1    | Go to pulse.clickshift.io                  | 10 seconds |
+| 2    | Click Connect Wallet → Approve in Phantom  | 15 seconds |
+| 3    | Sign login message in Phantom              | 5 seconds  |
+| 4    | See your 2 agent wallets appear            | Instant    |
+| 5    | Copy Vault address → Send SOL from Phantom | 1 minute   |
+| 6    | Set strategy (DCA target, amount, interval)| 2 minutes  |
+| 7    | Watch agents think and trade               | Passive    |
+| 8    | Collect profits to cold wallet (auto)      | 0 effort   |
+
+**Total setup: under 5 minutes. After that: zero effort required.**
+
+---
+
+*Pulse — The brain that powers autonomous agents onchain.*
+*pulse.clickshift.io · clickshift.io · Built in Nigeria 🇳🇬*
